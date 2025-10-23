@@ -120,13 +120,32 @@
 
   <div id="camera-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
-    <h2>拍照识别</h2>
-    <p>（这里是我们的相机界面...）</p>
+    <h2>“绿色”扫描仪</h2>
+    <p>快拍下你身边的物品，看看它是否“绿色”！</p>
+    
+    <div id="fake-camera" style="width: 80%; height: 250px; background: #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; text-align: center; margin-top: 20px;">
+        (这里假装是摄像头...)<br/>
+        (在Demo中，我们用按钮来“模拟”识别结果！)
+    </div>
+    
+    <div style="width: 80%; margin-top: 20px; display: flex; justify-content: space-around;">
+        <button class="save-button" style="background-color: #059669;" onclick="logGreenAction('可回收物')">
+          📷 模拟“可回收物”
+        </button>
+        <button class="save-button" style="background-color: #b91c1c;" onclick="logGreenAction('不可回收')">
+          📷 模拟“不可回收”
+        </button>
+    </div>
   </div>
   <div id="travel-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
     <h2>绿色出行</h2>
-    <p>（这里是我们的出行打卡界面...）</p>
+    <p>你今天是不是走路或骑车来上学啦？</g>
+    <p>快来“打卡”吧！</p>
+    
+    <button class="save-button" style="padding: 20px 40px; font-size: 20px;" onclick="logGreenAction('绿色出行')">
+      🚶 我今天“绿色出行”啦！
+    </button>
   </div>
   <div id="wardrobe-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
@@ -160,16 +179,23 @@
   
 
   <script>
-    /* 【蓝图 6: 我们的“数据保险箱” (Dexie.js)】
-      (大改造！) 我们把“个人档案”放进了 'profile' 表
-    */
+    /* 【【【 蓝图 17: 我们的“绿色行动” (Green Action) 】】】 */
+    
+    // (新！) 这是我们“保险箱”的新“账本”
+    // (注意！我们把版本号从 1 升到了 2，因为它结构变了！)
     const db = new Dexie('EcoSpriteDB');
-    db.version(1).stores({
-      profile: 'id, userName, spriteName', // (新！) 我们用 'id' 来存固定的 'userProfile'
-      points: 'id, value', // (新！) 存积分
+    db.version(2).stores({
+      profile: 'id, userName, spriteName', 
+      stats: 'id, points', // (新！) 我们把 'points' 移到了 'stats' 表
       wardrobe: '++id, name, type, imageUrl'
+      // (我们删掉了旧的 'points' 表)
+    }).upgrade(tx => {
+      // (魔法！) 当“保险箱”升级时，我们帮用户把旧积分转过来
+      return tx.points.toCollection().first(p => {
+        if (p) return tx.stats.put({id: 'userStats', points: p.value});
+      });
     });
-    console.log("我们的数据圣殿 (Dexie.js) 已经准备好了。");
+    console.log("我们的数据圣殿 (V2) 已经升级准备好了！");
 
     /* 【蓝图 7: 我们的“门” (View Switcher)】*/
     function showView(viewId) {
@@ -285,6 +311,44 @@
       chatLog.scrollTop = chatLog.scrollHeight;
     }
     
+    /* 【【【 蓝图 17 (V7 升级版): “绿色行动”魔法 】】】 
+       (新！) 我们增加了一个“aiMessage”参数！
+    */
+    async function logGreenAction(actionType, aiMessage = "") {
+      let reward = 0;
+      let message = "";
+      
+      // 1. 根据“行动”，决定“奖励”
+      if (actionType === '可回收物') {
+        reward = 10; // (奖励 10 “小花”)
+        // (新！) 如果 AI 给了“撒娇话术”，我们就用它！
+        message = aiMessage || `哇！你识别了“可回收物”！太棒了！小小启为你 +${reward} 积分！😊`;
+      } 
+      else if (actionType === '不可回收') {
+        reward = 0; // (不奖励)
+        message = aiMessage || `噢... 这是一个“不可回收”的物品... 😢 没关系，我们下次试着少用它一点点，好吗？`;
+      }
+      else if (actionType === '绿色出行') {
+        reward = 20; // (走路上学，奖励 20 “小花”！)
+        message = `你今天“绿色出行”了！太了不起！小小启为你 +${reward} 积分！🚶💚`;
+      }
+      
+      // 2. 把“小花”存进“保险箱”
+      if (reward > 0) {
+        await db.stats.update('userStats', {
+          points: Dexie.inc(reward) // (魔法！) "Dexie.inc" 的意思是在“原有基础上”增加！
+        }).catch(async () => {
+          // (保险) 如果是第一次，就新建一个
+          await db.stats.put({id: 'userStats', points: reward});
+        });
+      }
+      
+      // 3. 告诉用户！(用 AI 的话术！)
+      alert(message); 
+      
+      // 4. 带用户回“客厅”
+      showView('home-view');
+    }
     
     /* 【【【 蓝图 14: 我们的“领养仪式” (Setup Logic) 】】】 */
     
@@ -331,6 +395,45 @@
           addChatMessage('sprite', `你好，${profile.userName}！和我说说话吧。`);
         }
       }
+    }
+
+    /* 【【【 蓝图 17 (V7 升级版): “绿色行动”魔法 】】】 
+       (新！) 我们增加了一个“aiMessage”参数！
+    */
+    async function logGreenAction(actionType, aiMessage = "") {
+      let reward = 0;
+      let message = "";
+      
+      // 1. 根据“行动”，决定“奖励”
+      if (actionType === '可回收物') {
+        reward = 10; // (奖励 10 “小花”)
+        // (新！) 如果 AI 给了“撒娇话术”，我们就用它！
+        message = aiMessage || `哇！你识别了“可回收物”！太棒了！小小启为你 +${reward} 积分！😊`;
+      } 
+      else if (actionType === '不可回收') {
+        reward = 0; // (不奖励)
+        message = aiMessage || `噢... 这是一个“不可回收”的物品... 😢 没关系，我们下次试着少用它一点点，好吗？`;
+      }
+      else if (actionType === '绿色出行') {
+        reward = 20; // (走路上学，奖励 20 “小花”！)
+        message = `你今天“绿色出行”了！太了不起！小小启为你 +${reward} 积分！🚶💚`;
+      }
+      
+      // 2. 把“小花”存进“保险箱”
+      if (reward > 0) {
+        await db.stats.update('userStats', {
+          points: Dexie.inc(reward) // (魔法！) "Dexie.inc" 的意思是在“原有基础上”增加！
+        }).catch(async () => {
+          // (保险) 如果是第一次，就新建一个
+          await db.stats.put({id: 'userStats', points: reward});
+        });
+      }
+      
+      // 3. 告诉用户！(用 AI 的话术！)
+      alert(message); 
+      
+      // 4. 带用户回“客厅”
+      showView('home-view');
     }
 
     /* 【【【 蓝图 15: 我们的“迎宾员” (Startup Logic) 】】】 
