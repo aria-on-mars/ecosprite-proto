@@ -8,7 +8,6 @@
   <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 
   <style>
-    /* (CSS 样式... 和 V4 一模一样) */
     :root {
       --color-bg-start: #ecfdf5;
       --color-bg-end: #d1fae5;
@@ -31,10 +30,8 @@
       color: var(--color-text);
       transition: background-color 0.5s;
     }
-    /* (我们把 .view 的 "active" 状态，从 V4.2 里去掉了，
-       因为现在启动时要由 JS 来决定先看哪个房间) */
     .view { 
-      display: none; /* (注意！) 默认全都是 "display: none" */
+      display: none; /* 默认全都是 "display: none" */
       width: 100%; 
       height: 100%; 
       flex-direction: column; 
@@ -64,14 +61,8 @@
     .chat-msg { margin-bottom: 10px; }
     .chat-msg.user { text-align: right; color: #064e3b; }
     .chat-msg.sprite { color: var(--color-primary-dark); font-weight: 600; }
-    
-    /* (新) “领养室”的特殊样式 */
-    #setup-view {
-       background: var(--color-bg-end);
-    }
-    #setup-view .form-group {
-      text-align: center;
-    }
+    #setup-view { background: var(--color-bg-end); }
+    #setup-view .form-group { text-align: center; }
   </style>
 </head>
 
@@ -110,8 +101,7 @@
   <div id="chat-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
     <h2 id="chat-title">聊天室</h2>
-    <div id="chat-log">
-      </div>
+    <div id="chat-log"></div>
     <div class="form-group" style="display: flex;">
       <input type="text" id="chat-input" placeholder="输入你的消息..." style="flex-grow: 1; margin-top: 0;" />
       <button id="chat-send" class="save-button" style="margin-top: 0; margin-left: 10px;">发送</button>
@@ -147,24 +137,24 @@
         小小启正在努力“看”...
       </div>
     </div>
-    
   </div>
-    
+
   <div id="travel-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
     <h2>绿色出行</h2>
     <p>你今天是不是走路或骑车来上学啦？</g>
     <p>快来“打卡”吧！</p>
-    
     <button class="save-button" style="padding: 20px 40px; font-size: 20px;" onclick="logGreenAction('绿色出行')">
       🚶 我今天“绿色出行”啦！
     </button>
   </div>
+  
   <div id="wardrobe-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
     <h2>我的衣柜</h2>
     <p>（这里是我们的换装界面...）</p>
   </div>
+  
   <div id="data-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
     <h2>数据保险箱</h2>
@@ -172,39 +162,34 @@
     <button class="save-button" style="background-color: #555;">导入存档 (Import)</button>
   </div>
   
-  
   <div id="setup-view" class="view">
     <h2>欢迎来到 EcoSprite 的世界！</h2>
     <p>你好像是第一次来，我们来认识一下吧！</p>
-    
     <div class="form-group">
       <label for="user-name-input">你想让你的小精灵怎么称呼你？</label>
       <input type="text" id="user-name-input" placeholder="比如：阿楠, 主人, Aria..." />
     </div>
-    
     <div class="form-group">
       <label for="sprite-name-input">你想给你的小精灵起个什么名字？</label>
       <input type="text" id="sprite-name-input" placeholder="比如：小启, Eco, 团子..." />
     </div>
-    
     <button id="save-profile" class="save-button">领养它！</button>
   </div>
   
 
-<script>
-    /* 【【【 蓝图 19: 我们的“摄像头开关” (V8) 】】】 */
-    let cameraStream = null; // (这是一个“全局开关”，用来记住我们的摄像头)
+  <script>
+    /* 【【【 V9 终极版 脚本 】】】 */
 
-    /* 【【【 蓝图 17: 我们的“保险箱” (V7 升级版) 】】】 */
+    /* 【蓝图 19: 摄像头开关】 */
+    let cameraStream = null; 
+
+    /* 【蓝图 17: 保险箱 (V7)】 */
     const db = new Dexie('EcoSpriteDB');
-    // (注意！我们把版本号从 1 升到了 2，因为它结构变了！)
     db.version(2).stores({
       profile: 'id, userName, spriteName', 
-      stats: 'id, points', // (新！) 我们把 'points' 移到了 'stats' 表
+      stats: 'id, points', 
       wardrobe: '++id, name, type, imageUrl'
-      // (我们删掉了旧的 'points' 表)
     }).upgrade(tx => {
-      // (魔法！) 当“保险箱”升级时，我们帮用户把旧积分转过来
       return tx.points.toCollection().first(p => {
         if (p) return tx.stats.put({id: 'userStats', points: p.value});
       });
@@ -214,7 +199,7 @@
 
     /* 【蓝图 7: 我们的“门” (V8 升级版)】*/
     function showView(viewId) {
-      // (新！) 在“换房间”之前，先检查要不要“关摄像头”
+      // (V9 修复！) 在“换房间”之前，先检查要不要“关摄像头”
       if (viewId !== 'camera-view' && cameraStream) {
         stopCamera();
       }
@@ -239,10 +224,10 @@
       }
     }
 
-    /* 【蓝图 12: 我们的“秘密钥匙” (V5)】 */
+    /* 【蓝图 12: 秘密钥匙 (V5)】 */
     const MY_SECRET_KEY = "sk-gD0wFv1jBiuo1ApwdOd9vexQoEaZcTINxh50sY0FaDwMJaAa"; 
     
-    /* 【【【 蓝图 13: 我们的“动态灵魂” (V5) 】】】 */
+    /* 【蓝图 13: 动态灵魂 (V5)】 */
     async function getSystemPrompt() {
       const profile = await db.profile.get('userProfile');
       if (profile) {
@@ -254,7 +239,7 @@
     }
     
     
-    /* 【蓝图 11: “聊天室”的“发送”功能 (V5.2 修复版)】 */
+    /* 【蓝图 11: 聊天室 (V5.2 修复版)】 */
     document.getElementById('chat-send').onclick = async function() {
       const chatLog = document.getElementById('chat-log');
       const input = document.getElementById('chat-input');
@@ -273,20 +258,16 @@
       
       try {
         const dynamicSystemPrompt = await getSystemPrompt();
-
         const response = await fetch('https://chat.kaxsx.top/v1/chat/completions', { 
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${MY_SECRET_KEY}` 
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MY_SECRET_KEY}` },
           body: JSON.stringify({
             model: '[c1]gemini-2.5-pro-preview-05-06', // (你成功的Model！)
             messages: [
               { role: 'system', content: dynamicSystemPrompt }, 
               { role: 'user', content: userMessage } 
             ],
-            stream: false // (我们保留 V5.1 的魔法)
+            stream: false 
           })
         });
 
@@ -297,7 +278,6 @@
         
         const data = await response.json();
 
-        // (V5.1 的“终极防御”)
         if (data.error) {
           throw new Error(`AI的“大脑”报错了: ${data.error.message || JSON.stringify(data.error)}`);
         }
@@ -306,7 +286,7 @@
           const spriteMessage = data.choices[0].message.content;
           addChatMessage('sprite', spriteMessage, true);
         } else {
-          throw new Error("AI没有返回聊天内容，它返回了一个奇怪的密语...");
+          throw new Error("AI没有返回聊天内容...");
         }
 
       } catch (error) {
@@ -328,15 +308,13 @@
       chatLog.scrollTop = chatLog.scrollHeight;
     }
     
-    /* 【【【 蓝图 17 (V7 升级版): “绿色行动”魔法 】】】 
-       (新！) 我们增加了一个“aiMessage”参数！
-    */
+    /* 【蓝图 17: “绿色行动”魔法 (V7)】 */
     async function logGreenAction(actionType, aiMessage = "") {
       let reward = 0;
       let message = "";
       
       if (actionType === '可回收物') {
-        reward = 10; // (奖励 10 “小花”)
+        reward = 10; 
         message = aiMessage || `哇！你识别了“可回收物”！太棒了！小小启为你 +${reward} 积分！😊`;
       } 
       else if (actionType === '不可回收') {
@@ -344,7 +322,7 @@
         message = aiMessage || `噢... 这是一个“不可回收”的物品... 😢 没关系，我们下次试着少用它一点点，好吗？`;
       }
       else if (actionType === '绿色出行') {
-        reward = 20; // (奖励 20 “小花”！)
+        reward = 20; 
         message = `你今天“绿色出行”了！太了不起！小小启为你 +${reward} 积分！🚶💚`;
       }
       
@@ -361,7 +339,7 @@
     }
 
     
-    /* 【【【 蓝图 14: 我们的“领养仪式” (V5) 】】】 */
+    /* 【蓝图 14: 领养仪式 (V5)】 */
     document.getElementById('save-profile').onclick = async function() {
       const userName = document.getElementById('user-name-input').value;
       const spriteName = document.getElementById('sprite-name-input').value;
@@ -371,12 +349,7 @@
         return;
       }
       
-      await db.profile.put({
-        id: 'userProfile', 
-        userName: userName,
-        spriteName: spriteName
-      });
-      
+      await db.profile.put({ id: 'userProfile', userName: userName, spriteName: spriteName });
       showView('home-view');
     };
     
@@ -402,14 +375,20 @@
       }
     }
 
-    /* 【【【 蓝图 19 & 20: “真实之眼” (V8 核心魔法) 】】】 */
+    /* 【【【 蓝图 19 & 20: “真实之眼” (V8 + V9 Bug修复) 】】】 */
 
     // (新！) “关灯”魔法：关掉摄像头
     function stopCamera() {
-      if (cameraStream) {
+      // (V9 终极修复！) 我们要加一个“超级安全锁”！
+      // 检查 "cameraStream" 是不是“真的” (truthy)，
+      // 并且 "cameraStream.getTracks" 是不是一个“真的”函数！
+      if (cameraStream && typeof cameraStream.getTracks === 'function') {
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStream = null;
         console.log("摄像头已关闭。");
+      } else {
+        console.log("摄像头已经是关闭状态，无需操作。");
+        cameraStream = null; // (保险) 确保它一定是 null
       }
     }
 
@@ -419,9 +398,13 @@
       const startBtn = document.getElementById('start-camera-btn');
       const captureBtn = document.getElementById('capture-btn');
       
-      stopCamera(); // (保险)
-
+      // (V9 修复！) 我们把“关灯”从这里移走了！
+      // stopCamera(); // (旧的 V8 代码，它会在这里引发 Bug)
+      
       try {
+        // (保险) 先确保万无一失
+        stopCamera(); 
+        
         cameraStream = await navigator.mediaDevices.getUserMedia({ 
           video: { facingMode: 'environment' }, 
           audio: false 
@@ -464,7 +447,7 @@
       
       document.getElementById('camera-ai-section').style.display = 'block';
       
-      stopCamera(); // (关灯！)
+      stopCamera(); // (关灯！拍照后必须关灯)
     };
     
     // (新！) “重拍”魔法
@@ -473,10 +456,12 @@
       document.getElementById('camera-ai-section').style.display = 'none'; 
       document.getElementById('reset-camera-btn').style.display = 'none'; 
       document.getElementById('start-camera-btn').style.display = 'block'; 
+      
+      // (保险) 确保万无一失
+      stopCamera();
     };
 
-    /* 【【【 蓝图 18 (V7): “会思考的相机”之“大脑” 】】】 */
-    // (注意！你HTML里的按钮ID必须是 'camera-scan-btn' 哦！)
+    /* 【蓝图 18: “会思考的相机”之“大脑” (V8.1)】 */
     document.getElementById('camera-scan-btn').onclick = async function() {
       const input = document.getElementById('camera-input');
       const loadingMsg = document.getElementById('camera-loading');
@@ -495,7 +480,6 @@
         const profile = await db.profile.get('userProfile');
         const userName = profile ? profile.userName : '主人';
         
-        // (这就是“相机”的“专属灵魂”！)
         const cameraSystemPrompt = `
           你是 EcoSprite，一个可爱的垃圾分类专家。你的主人 ${userName} 正在“扫描”一个物品，你要帮他/她分类。
           你的任务是：
@@ -506,19 +490,14 @@
           3.  在“关键词”后面，用“小小启”的、可爱的、撒娇的语气，告诉 ${userName} 它该扔到哪个桶（比如黄色、绿色、红色、或垃圾填埋桶），并鼓励他/她。
               -   (如果是[REWARD])：要开心！告诉他/她我们一起“种了一朵小花”！
               -   (如果是[COAX])：要撒娇！告诉他/她我们要“尽量少用”它哦！
-        `; // <--- (我把那个“*”删掉啦！)
+        `; // (V8.1 已修复那个“*”错误)
 
         const response = await fetch('https://chat.kaxsx.top/v1/chat/completions', { 
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${MY_SECRET_KEY}` 
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MY_SECRET_KEY}` },
           body: JSON.stringify({
             model: '[c1]gemini-2.5-pro-preview-05-06', 
-            messages: [
-              { role: 'system', content: cameraSystemPrompt },
-            ],
+            messages: [ { role: 'system', content: cameraSystemPrompt } ],
             stream: false 
           })
         });
@@ -543,7 +522,6 @@
           } else {
             alert("小小启好像看不太清... " + aiReply);
           }
-          
         } else {
           throw new Error("AI没有返回聊天内容...");
         }
@@ -559,7 +537,7 @@
     };
 
 
-    /* 【【【 蓝图 15: 我们的“迎宾员” (V5) 】】】 */
+    /* 【蓝图 15: 我们的“迎宾员” (V5)】 */
     (async function() {
       const profile = await db.profile.get('userProfile');
       if (!profile) {
