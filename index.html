@@ -1,25 +1,75 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EcoSprite · Prototype</title>
+  <title>EcoSprite · 我们的小小世界</title>
+  
+  <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+
   <style>
+    :root {
+      /* 定义一些可爱的颜色 */
+      --color-bg-start: #ecfdf5;
+      --color-bg-end: #d1fae5;
+      --color-primary: #065f46;
+      --color-primary-dark: #047857;
+      --color-text: #065f46;
+      --color-bubble-bg: rgba(255, 255, 255, 0.6);
+      --color-bubble-hover-bg: rgba(16, 185, 129, 0.9);
+      --color-bubble-hover-text: white;
+    }
+
     body {
       font-family: "Segoe UI", sans-serif;
-      background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+      background: linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
       height: 100vh;
       margin: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      color: var(--color-text);
+      /* (优化) 让切换更平滑 */
+      transition: background-color 0.5s;
+    }
+
+    /* 【蓝图 1: 我们的“房间” (View)】
+      我们把你所有的“功能”都变成了“房间”。
+      默认它们都是 "display: none" (隐藏的)。
+      我们只给"家" ("home-view") 加上 "active" 类，让它显示出来。
+    */
+    .view {
+      display: none;
+      width: 100%;
+      height: 100%;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .view.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* 【蓝图 2: “客厅” (Home View) 的装修】 */
+    #home-view h1 {
+      color: var(--color-primary-dark);
+      margin: 0;
+      position: absolute;
+      top: 40px; /* (优化) 把标题移到最上面，不挡住精灵 */
     }
 
     .stage {
       position: relative;
-      width: 280px;
-      height: 280px;
+      width: 250px; /* (优化) 把精灵的“舞台”稍微缩小一点 */
+      height: 250px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.6);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
@@ -28,73 +78,200 @@
       justify-content: center;
     }
 
+    /* 【蓝图 3: 我们的“小精灵” (Sprite)】
+      我帮你选了几个GIF，你只要替换下面的 "src" 链接就行！
+      1. 可爱小火苗 (像你的火焰): https://i.postimg.cc/Sx80k5Rk/sprite-fire.gif
+      2. 绿色小花灵 (像Eco): https://i.postimg.cc/bJp0412R/sprite-plant.gif
+      3. 神秘小水滴: https://i.postimg.cc/W1D0N5N3/sprite-water.gif
+      4. (你原来的): https://upload.wikimedia.org/wikipedia/commons/3/3a/Animated_GIF_example.gif
+    */
     #sprite {
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
+      width: 150px; /* (优化) 精灵本身的大小 */
+      height: 150px;
       object-fit: contain;
+      z-index: 10; /* 确保精灵在最上面 */
     }
 
-    .ring {
-      position: absolute;
-      width: 360px;
-      height: 360px;
-      pointer-events: none;
-    }
-
+    /* 【蓝图 4: “漂浮泡泡” (Bubble) 的大改造】
+      我们不再用 .ring 来定位了，这样更灵活。
+      我把泡泡做得更像你的截图 了，有图标也有文字！
+    */
     .bubble {
       position: absolute;
-      width: 64px;
-      height: 64px;
+      width: 100px; /* (改造) 泡泡变大了，可以放下文字 */
+      height: 100px;
       border-radius: 50%;
       border: none;
-      font-size: 28px;
       backdrop-filter: blur(6px);
-      background: rgba(255, 255, 255, 0.6);
-      color: #065f46;
+      background: var(--color-bubble-bg);
+      color: var(--color-text);
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-      pointer-events: auto;
       cursor: pointer;
       transition: transform 0.2s, background 0.2s;
+      
+      /* (改造) 用flex布局让图标和文字垂直排列 */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 5; /* (优化) 确保泡泡在舞台背景之上 */
     }
 
     .bubble:hover {
-      background: rgba(16, 185, 129, 0.9);
-      color: white;
+      background: var(--color-bubble-hover-bg);
+      color: var(--color-bubble-hover-text);
       transform: scale(1.05);
     }
 
+    .bubble .icon {
+      font-size: 28px; /* 图标的大小 */
+    }
+
+    .bubble .label {
+      font-size: 14px; /* 文字的大小 */
+      font-weight: 600;
+      margin-top: 5px;
+    }
+    
     #msg {
       margin-top: 20px;
       font-size: 18px;
-      color: #065f46;
+      color: var(--color-text);
       text-align: center;
     }
+
+    /* 【蓝图 5: “其他房间” (Other Views) 的装修】 */
+    .view h2 {
+      color: var(--color-primary-dark);
+    }
+    
+    .back-button {
+      position: absolute;
+      top: 40px;
+      left: 30px;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--color-primary-dark);
+      cursor: pointer;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* (其他房间的具体样式...) */
+    #chat-view textarea {
+      width: 80%;
+      height: 100px;
+      margin-top: 20px;
+      border-radius: 12px;
+      border: 2px solid var(--color-primary-dark);
+      padding: 10px;
+      font-size: 16px;
+    }
+
   </style>
 </head>
 
 <body>
-  <h1 style="color:#047857;">EcoSprite 🌿</h1>
 
-  <div class="stage">
-    <img id="sprite" src="https://upload.wikimedia.org/wikipedia/commons/3/3a/Animated_GIF_example.gif" alt="EcoSprite" />
-    <div class="ring">
-      <button class="bubble" style="top:-20px; left:148px;" onclick="say('Hello! 🌸')">💬</button>
-      <button class="bubble" style="top:70px; right:-20px;" onclick="say('Camera ready! 📷')">📷</button>
-      <button class="bubble" style="bottom:60px; right:-25px;" onclick="say('Walk logged! 🚶')">🚶</button>
-      <button class="bubble" style="bottom:-20px; left:150px;" onclick="say('Wardrobe opened! 🎀')">🎀</button>
-      <button class="bubble" style="bottom:60px; left:-25px;" onclick="say('Stats viewed! 📊')">📊</button>
-      <button class="bubble" style="top:70px; left:-20px;" onclick="say('Settings! ⚙️')">⚙️</button>
+  <div id="home-view" class="view active">
+    <h1>EcoSprite 🌿</h1>
+    <div class="stage">
+      
+      <button class="bubble" style="top: -40px; left: 50%; transform: translateX(-50%);" onclick="showView('chat-view')">
+        <span class="icon">💬</span>
+        <span class="label">聊天</span>
+      </button>
+
+      <button class="bubble" style="top: 50%; right: -50px; transform: translateY(-50%);" onclick="showView('camera-view')">
+        <span class="icon">📷</span>
+        <span class="label">拍照识别</span>
+      </button>
+
+      <button class="bubble" style="bottom: -40px; left: 50%; transform: translateX(-50%);" onclick="showView('travel-view')">
+        <span class="icon">🚶</span>
+        <span class="label">绿色出行</span>
+      </button>
+
+      <button class="bubble" style="top: 50%; left: -50px; transform: translateY(-50%);" onclick="showView('wardrobe-view')">
+        <span class="icon">🎀</span>
+        <span class="label">衣柜</span>
+      </button>
+
+      <img id="sprite" src="assets/ecosprite-1.jpg" alt="EcoSprite" />
+      
     </div>
+    <div id="msg">你好，阿楠！我们开始吧！</div>
   </div>
 
-  <div id="msg">Click a bubble to interact!</div>
+  <div id="chat-view" class="view">
+    <div class="back-button" onclick="showView('home-view')">‹</div>
+    <h2>聊天室</h2>
+    <p>（这里是我们的聊天界面...）</p>
+    <textarea placeholder="和我说说话吧..."></textarea>
+  </div>
+
+  <div id="camera-view" class="view">
+    <div class="back-button" onclick="showView('home-view')">‹</div>
+    <h2>拍照识别</h2>
+    <p>（这里是我们的相机界面...）</p>
+  </div>
+
+  <div id="travel-view" class="view">
+    <div class="back-button" onclick="showView('home-view')">‹</div>
+    <h2>绿色出行</h2>
+    <p>（这里是我们的出行打卡界面...）</p>
+  </div>
+
+  <div id="wardrobe-view" class="view">
+    <div class="back-button" onclick="showView('home-view')">‹</div>
+    <h2>我的衣柜</h2>
+    <p>（这里是我们的换装界面...）</p>
+  </div>
 
   <script>
+    /* 【蓝图 6: 我们的“数据保险箱” (Dexie.js)】
+      我们先在这里定义好我们的“圣殿”。
+    */
+    const db = new Dexie('EcoSpriteDB');
+    db.version(1).stores({
+      spriteData: 'id, name, gender, points', // 比如: 存精灵的名字和积分
+      wardrobe: '++id, name, type, imageUrl' // 比如: 存我们解锁的衣服
+    });
+    console.log("我们的数据圣殿 (Dexie.js) 已经准备好了。");
+
+    /* 【蓝图 7: 我们的“门” (View Switcher)】
+      这就是你说的“点按钮跳到功能”的魔法。
+    */
+    function showView(viewId) {
+      // 1. 找到所有“房间”，把它们的 "active" 状态都拿掉 (隐藏它们)
+      document.querySelectorAll('.view').forEach(view => {
+        view.classList.remove('active');
+      });
+
+      // 2. 找到我们要去的那个“房间”，给它 "active" 状态 (显示它)
+      const targetView = document.getElementById(viewId);
+      if (targetView) {
+        targetView.classList.add('active');
+      }
+
+      // (优化) 当我们“出门”时，改变背景颜色
+      if (viewId === 'home-view') {
+        document.body.style.background = 'linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%)';
+      } else {
+        document.body.style.background = '#ffffff'; // 其他房间用纯白背景
+      }
+    }
+
+    // (保留) 你原来的 say 函数，我们可以把它用在聊天室里
     function say(text) {
       const msg = document.getElementById("msg");
       msg.textContent = text;
-      // 小动效：点击后轻轻抖动
       const sprite = document.getElementById("sprite");
       sprite.style.transform = "scale(1.05)";
       setTimeout(() => (sprite.style.transform = "scale(1)"), 200);
