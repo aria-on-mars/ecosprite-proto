@@ -495,17 +495,18 @@
         const profile = await db.profile.get('userProfile');
         const userName = profile ? profile.userName : '主人';
         
+        // (这就是“相机”的“专属灵魂”！)
         const cameraSystemPrompt = `
           你是 EcoSprite，一个可爱的垃圾分类专家。你的主人 ${userName} 正在“扫描”一个物品，你要帮他/她分类。
           你的任务是：
           1.  判断这个物品（"${itemName}"）在澳大利亚(ANU校园)属于哪一类：[可回收], [厨余垃圾], [有害垃圾], 或 [不可回收/一般垃圾]。
           2.  **绝对不要** 长篇大论。你的回答**必须**以一个“关键词”开头：
               -   如果它是 [可回收] 或 [厨余垃圾]，就用 ` + "`[REWARD]`" + ` 开头。
-              -   如果它是 [不可回收/一般垃圾] 或 [有害垃圾]，就用 ` + "`[COAX]`" + *` 开头。
+              -   如果它是 [不可回收/一般垃圾] 或 [有害垃圾]，就用 ` + "`[COAX]`" + ` 开头。
           3.  在“关键词”后面，用“小小启”的、可爱的、撒娇的语气，告诉 ${userName} 它该扔到哪个桶（比如黄色、绿色、红色、或垃圾填埋桶），并鼓励他/她。
               -   (如果是[REWARD])：要开心！告诉他/她我们一起“种了一朵小花”！
               -   (如果是[COAX])：要撒娇！告诉他/她我们要“尽量少用”它哦！
-        `;
+        `; // <--- (我把那个“*”删掉啦！)
 
         const response = await fetch('https://chat.kaxsx.top/v1/chat/completions', { 
           method: 'POST',
