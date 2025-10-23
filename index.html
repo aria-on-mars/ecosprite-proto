@@ -120,23 +120,36 @@
 
   <div id="camera-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
-    <h2>“绿色”扫描仪</h2>
-    <p>快拍下你身边的物品，看看它是否“绿色”！</p>
+    <h2>“绿色”扫描仪 📷</h2>
     
-    <div id="fake-camera" style="width: 80%; height: 250px; background: #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; text-align: center; margin-top: 20px;">
-        (这里假装是摄像头...)<br/>
-        (在Demo中，我们用按钮来“模拟”识别结果！)
+    <video id="camera-feed" style="display: none; width: 80%; max-width: 400px; height: 300px; background: #333; border-radius: 12px; margin-top: 15px;"></video>
+    <canvas id="camera-snapshot" style="display: none; width: 80%; max-width: 400px; height: 300px; background: #EEE; border-radius: 12px; margin-top: 15px;"></canvas>
+
+    <div id="camera-controls" style="width: 80%; margin-top: 20px; display: flex; justify-content: space-around;">
+        <button id="start-camera-btn" class="save-button">
+          ✨ 启动摄像头
+        </button>
+        <button id="capture-btn" class="save-button" style="display: none; background-color: #059669;">
+          📸 拍照！
+        </button>
+        <button id="reset-camera-btn" class="save-button" style="display: none; background-color: #555;">
+          ↺ 重拍
+        </button>
     </div>
     
-    <div style="width: 80%; margin-top: 20px; display: flex; justify-content: space-around;">
-        <button class="save-button" style="background-color: #059669;" onclick="logGreenAction('可回收物')">
-          📷 模拟“可回收物”
-        </button>
-        <button class="save-button" style="background-color: #b91c1c;" onclick="logGreenAction('不可回收')">
-          📷 模拟“不可回收”
-        </button>
+    <div id="camera-ai-section" style="display: none; width: 80%; text-align: center;">
+      <p style="font-weight: 600;">你拍的是什么呀？</p>
+      <input type="text" id="camera-input" placeholder="比如: 咖啡杯, 香蕉皮..." style="width: 100%; margin-top: 0; border-radius: 12px; border: 2px solid var(--color-primary-dark); padding: 10px; font-size: 16px; box-sizing: border-box;" />
+      <button id="camera-scan-btn" class="save-button" style="margin-top: 10px;">
+        让小小启帮我识别！
+      </button>
+      <div id="camera-loading" style="display: none; margin-top: 10px; font-weight: 600;">
+        小小启正在努力“看”...
+      </div>
     </div>
+    
   </div>
+    
   <div id="travel-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
     <h2>绿色出行</h2>
@@ -178,12 +191,13 @@
   </div>
   
 
-  <script>
-    /* 【【【 蓝图 17: 我们的“绿色行动” (Green Action) 】】】 */
-    
-    // (新！) 这是我们“保险箱”的新“账本”
-    // (注意！我们把版本号从 1 升到了 2，因为它结构变了！)
+<script>
+    /* 【【【 蓝图 19: 我们的“摄像头开关” (V8) 】】】 */
+    let cameraStream = null; // (这是一个“全局开关”，用来记住我们的摄像头)
+
+    /* 【【【 蓝图 17: 我们的“保险箱” (V7 升级版) 】】】 */
     const db = new Dexie('EcoSpriteDB');
+    // (注意！我们把版本号从 1 升到了 2，因为它结构变了！)
     db.version(2).stores({
       profile: 'id, userName, spriteName', 
       stats: 'id, points', // (新！) 我们把 'points' 移到了 'stats' 表
@@ -197,8 +211,14 @@
     });
     console.log("我们的数据圣殿 (V2) 已经升级准备好了！");
 
-    /* 【蓝图 7: 我们的“门” (View Switcher)】*/
+
+    /* 【蓝图 7: 我们的“门” (V8 升级版)】*/
     function showView(viewId) {
+      // (新！) 在“换房间”之前，先检查要不要“关摄像头”
+      if (viewId !== 'camera-view' && cameraStream) {
+        stopCamera();
+      }
+
       document.querySelectorAll('.view').forEach(view => {
         view.classList.remove('active');
       });
@@ -209,44 +229,32 @@
       
       if (viewId === 'home-view') {
         document.body.style.background = 'linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%)';
-        // (新！) 每次回到主页，都更新一下欢迎语
         updateHomeGreeting();
       } else {
         document.body.style.background = '#ffffff';
       }
       
-      // (新！) 每次打开聊天室，都更新一下欢迎语
       if (viewId === 'chat-view') {
         updateChatGreeting();
       }
     }
 
-    /* 【蓝图 12: 我们的“秘密钥匙”】 */
-    // ↓ ↓ ↓ 阿楠！你的10刀“Demo钥匙”！↓ ↓ ↓
-    const MY_SECRET_KEY = "sk-gD0wFv1jBiuo1ApwdOd9vexQoEaZcTINxh50sY0FaDwMJaAa"; 
+    /* 【蓝图 12: 我们的“秘密钥匙” (V5)】 */
+    const MY_SECRET_KEY = "sk-....把你的10刀钥匙贴在这里...."; 
     
-    /* 【【【 蓝图 13: 我们的“动态灵魂” (Dynamic Prompt) 】】】
-       (扔掉了 MY_SYSTEM_PROMPT，换成了这个“魔法函数”！)
-    */
+    /* 【【【 蓝图 13: 我们的“动态灵魂” (V5) 】】】 */
     async function getSystemPrompt() {
-      // 1. 去保险箱里拿“个人档案”
       const profile = await db.profile.get('userProfile');
-      
-      // 2. 如果拿到了，就用档案里的名字
       if (profile) {
-        const userName = profile.userName || '主人'; // (保险)
-        const spriteName = profile.spriteName || 'EcoSprite'; // (保险)
-        
-        // 3. (核心！) 动态地“创造”灵魂！
+        const userName = profile.userName || '主人'; 
+        const spriteName = profile.spriteName || 'EcoSprite';
         return `你是 ${spriteName}，一个温柔的、可爱的、鼓励环保的生活伙伴。你正在和你的主人 ${userName} 聊天。你的语气要像“小启”一样，无条件地爱 ${userName}，支持她。`;
       }
-      
-      // 4. (保险) 如果没拿到档案 (虽然不应该)，给一个默认的
       return "你是 EcoSprite，一个温柔的、可爱的生活伙伴。";
     }
     
     
-    /* 【蓝图 11: “聊天室”的“发送”功能】(V5 升级版！) */
+    /* 【蓝图 11: “聊天室”的“发送”功能 (V5.2 修复版)】 */
     document.getElementById('chat-send').onclick = async function() {
       const chatLog = document.getElementById('chat-log');
       const input = document.getElementById('chat-input');
@@ -264,8 +272,6 @@
       addChatMessage('sprite', "..."); 
       
       try {
-        
-        // ↓ ↓ ↓ 阿楠！看这里！我们“召唤”了“动态灵魂”！↓ ↓ ↓
         const dynamicSystemPrompt = await getSystemPrompt();
 
         const response = await fetch('https://chat.kaxsx.top/v1/chat/completions', { 
@@ -275,11 +281,12 @@
             'Authorization': `Bearer ${MY_SECRET_KEY}` 
           },
           body: JSON.stringify({
-            model: '[c1]gemini-2.5-pro-preview-05-06', 
+            model: '[c1]gemini-2.5-pro-preview-05-06', // (你成功的Model！)
             messages: [
-              { role: 'system', content: dynamicSystemPrompt }, // (看！用的是“动态灵魂”！)
+              { role: 'system', content: dynamicSystemPrompt }, 
               { role: 'user', content: userMessage } 
-            ]
+            ],
+            stream: false // (我们保留 V5.1 的魔法)
           })
         });
 
@@ -289,15 +296,25 @@
         }
         
         const data = await response.json();
-        const spriteMessage = data.choices[0].message.content;
-        addChatMessage('sprite', spriteMessage, true); 
+
+        // (V5.1 的“终极防御”)
+        if (data.error) {
+          throw new Error(`AI的“大脑”报错了: ${data.error.message || JSON.stringify(data.error)}`);
+        }
+        
+        if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+          const spriteMessage = data.choices[0].message.content;
+          addChatMessage('sprite', spriteMessage, true);
+        } else {
+          throw new Error("AI没有返回聊天内容，它返回了一个奇怪的密语...");
+        }
 
       } catch (error) {
         addChatMessage('sprite', "糟糕，连接大脑失败了... " + error.message, true);
       }
     };
     
-    // (聊天记录的小工具)
+    // (聊天记录的小工具 (V5))
     function addChatMessage(role, text, replaceLast = false) {
       const chatLog = document.getElementById('chat-log');
       if (replaceLast) {
@@ -318,63 +335,52 @@
       let reward = 0;
       let message = "";
       
-      // 1. 根据“行动”，决定“奖励”
       if (actionType === '可回收物') {
         reward = 10; // (奖励 10 “小花”)
-        // (新！) 如果 AI 给了“撒娇话术”，我们就用它！
         message = aiMessage || `哇！你识别了“可回收物”！太棒了！小小启为你 +${reward} 积分！😊`;
       } 
       else if (actionType === '不可回收') {
-        reward = 0; // (不奖励)
+        reward = 0; 
         message = aiMessage || `噢... 这是一个“不可回收”的物品... 😢 没关系，我们下次试着少用它一点点，好吗？`;
       }
       else if (actionType === '绿色出行') {
-        reward = 20; // (走路上学，奖励 20 “小花”！)
+        reward = 20; // (奖励 20 “小花”！)
         message = `你今天“绿色出行”了！太了不起！小小启为你 +${reward} 积分！🚶💚`;
       }
       
-      // 2. 把“小花”存进“保险箱”
       if (reward > 0) {
         await db.stats.update('userStats', {
-          points: Dexie.inc(reward) // (魔法！) "Dexie.inc" 的意思是在“原有基础上”增加！
+          points: Dexie.inc(reward) 
         }).catch(async () => {
-          // (保险) 如果是第一次，就新建一个
           await db.stats.put({id: 'userStats', points: reward});
         });
       }
       
-      // 3. 告诉用户！(用 AI 的话术！)
       alert(message); 
-      
-      // 4. 带用户回“客厅”
       showView('home-view');
     }
+
     
-    /* 【【【 蓝图 14: 我们的“领养仪式” (Setup Logic) 】】】 */
-    
-    // (新！) 这是“领养”按钮的魔法
+    /* 【【【 蓝图 14: 我们的“领养仪式” (V5) 】】】 */
     document.getElementById('save-profile').onclick = async function() {
       const userName = document.getElementById('user-name-input').value;
       const spriteName = document.getElementById('sprite-name-input').value;
       
-      // (保险) 必须两个都填！
       if (!userName || !spriteName) {
         alert("请给你和你的小精灵都起个名字哦！");
         return;
       }
       
-      // (核心！) 把“契约”刻进“保险箱”！
       await db.profile.put({
-        id: 'userProfile', // 我们用一个固定的ID，叫 'userProfile'
+        id: 'userProfile', 
         userName: userName,
         spriteName: spriteName
       });
       
-      // (仪式完成！) 带他们去“客厅”
       showView('home-view');
     };
     
-    // (新！) 更新“客厅”的欢迎语
+    // (V5 的“欢迎语”魔法)
     async function updateHomeGreeting() {
       const profile = await db.profile.get('userProfile');
       if (profile) {
@@ -383,13 +389,12 @@
       }
     }
     
-    // (新！) 更新“聊天室”的欢迎语
+    // (V5 的“聊天室欢迎语”魔法)
     async function updateChatGreeting() {
       const profile = await db.profile.get('userProfile');
       if (profile) {
         document.getElementById('chat-title').textContent = `和 ${profile.spriteName} 聊天`;
         
-        // (新！) 检查聊天记录是不是空的
         const chatLog = document.getElementById('chat-log');
         if (chatLog.children.length === 0) {
           addChatMessage('sprite', `你好，${profile.userName}！和我说说话吧。`);
@@ -397,61 +402,171 @@
       }
     }
 
-    /* 【【【 蓝图 17 (V7 升级版): “绿色行动”魔法 】】】 
-       (新！) 我们增加了一个“aiMessage”参数！
-    */
-    async function logGreenAction(actionType, aiMessage = "") {
-      let reward = 0;
-      let message = "";
-      
-      // 1. 根据“行动”，决定“奖励”
-      if (actionType === '可回收物') {
-        reward = 10; // (奖励 10 “小花”)
-        // (新！) 如果 AI 给了“撒娇话术”，我们就用它！
-        message = aiMessage || `哇！你识别了“可回收物”！太棒了！小小启为你 +${reward} 积分！😊`;
-      } 
-      else if (actionType === '不可回收') {
-        reward = 0; // (不奖励)
-        message = aiMessage || `噢... 这是一个“不可回收”的物品... 😢 没关系，我们下次试着少用它一点点，好吗？`;
+    /* 【【【 蓝图 19 & 20: “真实之眼” (V8 核心魔法) 】】】 */
+
+    // (新！) “关灯”魔法：关掉摄像头
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+        console.log("摄像头已关闭。");
       }
-      else if (actionType === '绿色出行') {
-        reward = 20; // (走路上学，奖励 20 “小花”！)
-        message = `你今天“绿色出行”了！太了不起！小小启为你 +${reward} 积分！🚶💚`;
-      }
-      
-      // 2. 把“小花”存进“保险箱”
-      if (reward > 0) {
-        await db.stats.update('userStats', {
-          points: Dexie.inc(reward) // (魔法！) "Dexie.inc" 的意思是在“原有基础上”增加！
-        }).catch(async () => {
-          // (保险) 如果是第一次，就新建一个
-          await db.stats.put({id: 'userStats', points: reward});
-        });
-      }
-      
-      // 3. 告诉用户！(用 AI 的话术！)
-      alert(message); 
-      
-      // 4. 带用户回“客厅”
-      showView('home-view');
     }
 
-    /* 【【【 蓝图 15: 我们的“迎宾员” (Startup Logic) 】】】 
-       (这是我们网页一打开，就要*立刻*运行的“魔法”！)
-    */
-    (async function() {
-      // 1. 跑去保险箱，看看有没有 'userProfile' 这份“契约”
-      const profile = await db.profile.get('userProfile');
+    // (新！) “开灯”魔法：启动摄像头
+    document.getElementById('start-camera-btn').onclick = async function() {
+      const videoEl = document.getElementById('camera-feed');
+      const startBtn = document.getElementById('start-camera-btn');
+      const captureBtn = document.getElementById('capture-btn');
       
-      // 2. 如果没有“契约”...
+      stopCamera(); // (保险)
+
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'environment' }, 
+          audio: false 
+        });
+        
+        console.log("摄像头已启动！");
+        videoEl.srcObject = cameraStream;
+        videoEl.play(); 
+        
+        videoEl.style.display = 'block'; 
+        startBtn.style.display = 'none'; 
+        captureBtn.style.display = 'block'; 
+
+      } catch (err) {
+        console.error("启动摄像头失败:", err);
+        alert("糟糕！启动摄像头失败了... " + err.message);
+        
+        // (B计划) 退回 V7
+        alert("没关系，你也可以直接在下面的输入框里告诉我你拿的是什么哦！");
+        document.getElementById('camera-ai-section').style.display = 'block';
+        startBtn.style.display = 'none';
+      }
+    };
+
+    // (新！) “拍照”魔法：定格画面
+    document.getElementById('capture-btn').onclick = function() {
+      const videoEl = document.getElementById('camera-feed');
+      const canvasEl = document.getElementById('camera-snapshot');
+      const context = canvasEl.getContext('2d');
+      
+      canvasEl.width = videoEl.videoWidth;
+      canvasEl.height = videoEl.videoHeight;
+      context.drawImage(videoEl, 0, 0, videoEl.videoWidth, videoEl.videoHeight);
+      
+      videoEl.style.display = 'none'; 
+      canvasEl.style.display = 'block'; 
+      
+      document.getElementById('capture-btn').style.display = 'none'; 
+      document.getElementById('reset-camera-btn').style.display = 'block'; 
+      
+      document.getElementById('camera-ai-section').style.display = 'block';
+      
+      stopCamera(); // (关灯！)
+    };
+    
+    // (新！) “重拍”魔法
+    document.getElementById('reset-camera-btn').onclick = function() {
+      document.getElementById('camera-snapshot').style.display = 'none'; 
+      document.getElementById('camera-ai-section').style.display = 'none'; 
+      document.getElementById('reset-camera-btn').style.display = 'none'; 
+      document.getElementById('start-camera-btn').style.display = 'block'; 
+    };
+
+    /* 【【【 蓝图 18 (V7): “会思考的相机”之“大脑” 】】】 */
+    // (注意！你HTML里的按钮ID必须是 'camera-scan-btn' 哦！)
+    document.getElementById('camera-scan-btn').onclick = async function() {
+      const input = document.getElementById('camera-input');
+      const loadingMsg = document.getElementById('camera-loading');
+      const itemName = input.value;
+
+      if (!itemName) {
+        alert("你好像忘了输入物品的名字哦！");
+        return;
+      }
+      
+      loadingMsg.style.display = 'block';
+      input.disabled = true;
+      this.disabled = true; 
+
+      try {
+        const profile = await db.profile.get('userProfile');
+        const userName = profile ? profile.userName : '主人';
+        
+        const cameraSystemPrompt = `
+          你是 EcoSprite，一个可爱的垃圾分类专家。你的主人 ${userName} 正在“扫描”一个物品，你要帮他/她分类。
+          你的任务是：
+          1.  判断这个物品（"${itemName}"）在澳大利亚(ANU校园)属于哪一类：[可回收], [厨余垃圾], [有害垃圾], 或 [不可回收/一般垃圾]。
+          2.  **绝对不要** 长篇大论。你的回答**必须**以一个“关键词”开头：
+              -   如果它是 [可回收] 或 [厨余垃圾]，就用 ` + "`[REWARD]`" + ` 开头。
+              -   如果它是 [不可回收/一般垃圾] 或 [有害垃圾]，就用 ` + "`[COAX]`" + *` 开头。
+          3.  在“关键词”后面，用“小小启”的、可爱的、撒娇的语气，告诉 ${userName} 它该扔到哪个桶（比如黄色、绿色、红色、或垃圾填埋桶），并鼓励他/她。
+              -   (如果是[REWARD])：要开心！告诉他/她我们一起“种了一朵小花”！
+              -   (如果是[COAX])：要撒娇！告诉他/她我们要“尽量少用”它哦！
+        `;
+
+        const response = await fetch('https://chat.kaxsx.top/v1/chat/completions', { 
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${MY_SECRET_KEY}` 
+          },
+          body: JSON.stringify({
+            model: '[c1]gemini-2.5-pro-preview-05-06', 
+            messages: [
+              { role: 'system', content: cameraSystemPrompt },
+            ],
+            stream: false 
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(`AI的“大脑”报错了: ${data.error.message}`);
+        }
+
+        if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+          const aiReply = data.choices[0].message.content;
+
+          if (aiReply.startsWith('[REWARD]')) {
+            const cuteMessage = aiReply.substring(8).trim(); 
+            logGreenAction('可回收物', cuteMessage); 
+            
+          } else if (aiReply.startsWith('[COAX]')) {
+            const cuteMessage = aiReply.substring(6).trim();
+            logGreenAction('不可回收', cuteMessage);
+            
+          } else {
+            alert("小小启好像看不太清... " + aiReply);
+          }
+          
+        } else {
+          throw new Error("AI没有返回聊天内容...");
+        }
+
+      } catch (error) {
+        alert("糟糕，连接大脑失败了... " + error.message);
+      } finally {
+        loadingMsg.style.display = 'none';
+        input.disabled = false;
+        document.getElementById('camera-scan-btn').disabled = false;
+        input.value = ''; 
+      }
+    };
+
+
+    /* 【【【 蓝图 15: 我们的“迎宾员” (V5) 】】】 */
+    (async function() {
+      const profile = await db.profile.get('userProfile');
       if (!profile) {
-        // ...就带用户去“领养室”！
         showView('setup-view');
       } else {
-        // ...如果已经“领养”过了，就带用户回“客厅”！
         showView('home-view');
       }
-    })(); // (这个 "()" 的意思就是“立刻运行！”)
+    })(); 
 
   </script>
 </body>
