@@ -461,7 +461,7 @@
       stopCamera();
     };
 
-    /* 【蓝图 18: “会思考的相机”之“大脑” (V8.1)】 */
+    /* 【【【 蓝图 18 (V9.1 修复版): “会思考的相机”之“大脑” 】】】 */
     document.getElementById('camera-scan-btn').onclick = async function() {
       const input = document.getElementById('camera-input');
       const loadingMsg = document.getElementById('camera-loading');
@@ -480,6 +480,7 @@
         const profile = await db.profile.get('userProfile');
         const userName = profile ? profile.userName : '主人';
         
+        // (我们的“灵魂”Prompt，一点都不用改)
         const cameraSystemPrompt = `
           你是 EcoSprite，一个可爱的垃圾分类专家。你的主人 ${userName} 正在“扫描”一个物品，你要帮他/她分类。
           你的任务是：
@@ -490,22 +491,28 @@
           3.  在“关键词”后面，用“小小启”的、可爱的、撒娇的语气，告诉 ${userName} 它该扔到哪个桶（比如黄色、绿色、红色、或垃圾填埋桶），并鼓励他/她。
               -   (如果是[REWARD])：要开心！告诉他/她我们一起“种了一朵小花”！
               -   (如果是[COAX])：要撒娇！告诉他/她我们要“尽量少用”它哦！
-        `; // (V8.1 已修复那个“*”错误)
+        `; 
 
         const response = await fetch('https://chat.kaxsx.top/v1/chat/completions', { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MY_SECRET_KEY}` },
           body: JSON.stringify({
             model: '[c1]gemini-2.5-pro-preview-05-06', 
-            messages: [ { role: 'system', content: cameraSystemPrompt } ],
+            messages: [
+              { role: 'system', content: cameraSystemPrompt },
+              // ↓ ↓ ↓ 阿楠！看这里！这就是我们的“V9.1修复”！↓ ↓ ↓
+              { role: 'user', content: `好的，请帮我分析 "${itemName}" 这个物品。` } 
+              // (我们加上了这句“必须的”用户提问！)
+            ],
             stream: false 
           })
         });
 
+        // (后面的代码... 和V9终极版一样，都是对的！)
         const data = await response.json();
 
         if (data.error) {
-          throw new Error(`AI的“大脑”报错了: ${data.error.message}`);
+          throw new Error(`AI的“大脑”报错了: ${data.error.message || JSON.stringify(data.error)}`);
         }
 
         if (data.choices && data.choices.length > 0 && data.choices[0].message) {
@@ -535,7 +542,6 @@
         input.value = ''; 
       }
     };
-
 
     /* 【蓝图 15: 我们的“迎宾员” (V5)】 */
     (async function() {
