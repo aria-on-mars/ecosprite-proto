@@ -195,7 +195,7 @@
       
       // 2. (核心) 【【【 这就是“发送给AI”的魔法 】】】
       try {
-        const response = await fetch('https://chat.kaxsx.top', {
+        const response = await fetch('https://chat.kaxsx.top/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
