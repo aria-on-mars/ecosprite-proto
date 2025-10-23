@@ -8,6 +8,7 @@
   <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
 
   <style>
+    /* (CSS 样式... 和 V3 一模一样，我就不重复贴了，节省空间) */
     :root {
       --color-bg-start: #ecfdf5;
       --color-bg-end: #d1fae5;
@@ -18,7 +19,6 @@
       --color-bubble-hover-bg: rgba(16, 185, 129, 0.9);
       --color-bubble-hover-text: white;
     }
-
     body {
       font-family: "Segoe UI", sans-serif;
       background: linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
@@ -31,173 +31,29 @@
       color: var(--color-text);
       transition: background-color 0.5s;
     }
-
-    .view {
-      display: none;
-      width: 100%;
-      height: 100%;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      animation: fadeIn 0.5s ease;
-    }
-
-    .view.active {
-      display: flex;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.98); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    #home-view h1 {
-      color: var(--color-primary-dark);
-      margin: 0;
-      position: absolute;
-      top: 40px; 
-    }
-
-    .stage {
-      position: relative;
-      width: 250px; 
-      height: 250px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.6);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* 【蓝图 8: 赋予“灵魂” (呼吸动画)】 */
-    @keyframes breathe {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.03); }
-      100% { transform: scale(1); }
-    }
-
-    #sprite {
-      width: 150px; 
-      height: 150px;
-      object-fit: contain;
-      z-index: 10; 
-      /* ↓ ↓ ↓ 你的“呼吸”魔法！↓ ↓ ↓ */
-      animation: breathe 4s ease-in-out infinite; 
-    }
-
-    .bubble {
-      position: absolute;
-      width: 100px; 
-      height: 100px;
-      border-radius: 50%;
-      border: none;
-      backdrop-filter: blur(6px);
-      background: var(--color-bubble-bg);
-      color: var(--color-text);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
-      cursor: pointer;
-      transition: transform 0.2s, background 0.2s;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 5; 
-    }
-
-    .bubble:hover {
-      background: var(--color-bubble-hover-bg);
-      color: var(--color-bubble-hover-text);
-      transform: scale(1.05);
-    }
-
+    .view { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; animation: fadeIn 0.5s ease; }
+    .view.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+    #home-view h1 { color: var(--color-primary-dark); margin: 0; position: absolute; top: 40px; }
+    .stage { position: relative; width: 250px; height: 250px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); display: flex; align-items: center; justify-content: center; }
+    @keyframes breathe { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+    #sprite { width: 150px; height: 150px; object-fit: contain; z-index: 10; animation: breathe 4s ease-in-out infinite; }
+    .bubble { position: absolute; width: 100px; height: 100px; border-radius: 50%; border: none; backdrop-filter: blur(6px); background: var(--color-bubble-bg); color: var(--color-text); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15); cursor: pointer; transition: transform 0.2s, background 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
+    .bubble:hover { background: var(--color-bubble-hover-bg); color: var(--color-bubble-hover-text); transform: scale(1.05); }
     .bubble .icon { font-size: 28px; }
     .bubble .label { font-size: 14px; font-weight: 600; margin-top: 5px; }
-    
-    #msg {
-      margin-top: 20px;
-      font-size: 18px;
-      color: var(--color-text);
-      text-align: center;
-    }
-
-    .view h2 {
-      color: var(--color-primary-dark);
-    }
-    
-    .back-button {
-      position: absolute;
-      top: 40px;
-      left: 30px;
-      font-size: 24px;
-      font-weight: 600;
-      color: var(--color-primary-dark);
-      cursor: pointer;
-      padding: 10px;
-      background: rgba(255, 255, 255, 0.5);
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* 【蓝图 9: “设置” 和 “聊天” 的新装修】 */
-    .form-group {
-      width: 80%;
-      margin: 10px 0;
-    }
-    .form-group label {
-      font-weight: 600;
-    }
-    .form-group input, .form-group textarea {
-      width: 100%;
-      margin-top: 5px;
-      border-radius: 12px;
-      border: 2px solid var(--color-primary-dark);
-      padding: 10px;
-      font-size: 16px;
-      box-sizing: border-box; /* (魔法) 让 padding 不会撑开宽度 */
-    }
-    
-    .save-button {
-      background-color: var(--color-primary-dark);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-    .save-button:hover {
-      background-color: var(--color-primary);
-    }
-    
-    #chat-log {
-      width: 80%;
-      height: 300px;
-      border: 2px solid var(--color-primary);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.7);
-      padding: 10px;
-      overflow-y: auto; /* (魔法) 让聊天记录可以滚动 */
-      margin-top: 20px;
-    }
-    .chat-msg {
-      margin-bottom: 10px;
-    }
-    .chat-msg.user {
-      text-align: right;
-      color: #064e3b;
-    }
-    .chat-msg.sprite {
-      color: var(--color-primary-dark);
-      font-weight: 600;
-    }
-
+    #msg { margin-top: 20px; font-size: 18px; color: var(--color-text); text-align: center; }
+    .view h2 { color: var(--color-primary-dark); }
+    .back-button { position: absolute; top: 40px; left: 30px; font-size: 24px; font-weight: 600; color: var(--color-primary-dark); cursor: pointer; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+    .form-group { width: 80%; margin: 10px 0; }
+    .form-group label { font-weight: 600; }
+    .form-group input, .form-group textarea { width: 100%; margin-top: 5px; border-radius: 12px; border: 2px solid var(--color-primary-dark); padding: 10px; font-size: 16px; box-sizing: border-box; }
+    .save-button { background-color: var(--color-primary-dark); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; }
+    .save-button:hover { background-color: var(--color-primary); }
+    #chat-log { width: 80%; height: 300px; border: 2px solid var(--color-primary); border-radius: 12px; background: rgba(255, 255, 255, 0.7); padding: 10px; overflow-y: auto; margin-top: 20px; }
+    .chat-msg { margin-bottom: 10px; }
+    .chat-msg.user { text-align: right; color: #064e3b; }
+    .chat-msg.sprite { color: var(--color-primary-dark); font-weight: 600; }
   </style>
 </head>
 
@@ -212,22 +68,17 @@
         <span class="label">聊天</span>
       </button>
 
-      <button class="bubble" style="top: 30px; right: -50px;" onclick="showView('camera-view')">
+      <button class="bubble" style="top: 50%; right: -50px; transform: translateY(-50%);" onclick="showView('camera-view')">
         <span class="icon">📷</span>
         <span class="label">拍照识别</span>
       </button>
       
-      <button class="bubble" style="top: 160px; right: -50px;" onclick="showView('settings-view')">
-        <span class="icon">⚙️</span>
-        <span class="label">设置</span>
-      </button>
-
       <button class="bubble" style="bottom: -40px; left: 50%; transform: translateX(-50%);" onclick="showView('travel-view')">
         <span class="icon">🚶</span>
         <span class="label">绿色出行</span>
       </button>
 
-      <button class="bubble" style="top: 30px; left: -50px;" onclick="showView('wardrobe-view')">
+      <button class="bubble" style="top: 50%; left: -50px; transform: translateY(-50%);" onclick="showView('wardrobe-view')">
         <span class="icon">🎀</span>
         <span class="label">衣柜</span>
       </button>
@@ -237,7 +88,7 @@
         <span class="label">数据</span>
       </button>
 
-      <img id="sprite" src="assets/ecosprite-1.jpg" alt="EcoSprite" />
+      <img id="sprite" src="assets/ecosprite-1.png" alt="EcoSprite" />
       
     </div>
     <div id="msg">你好，阿楠！我们开始吧！</div>
@@ -246,11 +97,9 @@
   <div id="chat-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
     <h2>聊天室</h2>
-    
     <div id="chat-log">
-      <div class="chat-msg sprite">你好，阿楠！和我说说话吧。</div>
+      <div class="chat-msg sprite">你好！和我说说话吧。</div>
     </div>
-    
     <div class="form-group" style="display: flex;">
       <input type="text" id="chat-input" placeholder="输入你的消息..." style="flex-grow: 1; margin-top: 0;" />
       <button id="chat-send" class="save-button" style="margin-top: 0; margin-left: 10px;">发送</button>
@@ -262,13 +111,11 @@
     <h2>拍照识别</h2>
     <p>（这里是我们的相机界面...）</p>
   </div>
-  
   <div id="travel-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
     <h2>绿色出行</h2>
     <p>（这里是我们的出行打卡界面...）</p>
   </div>
-  
   <div id="wardrobe-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
     <h2>我的衣柜</h2>
@@ -282,33 +129,15 @@
     <button class="save-button" style="background-color: #555;">导入存档 (Import)</button>
   </div>
   
-  <div id="settings-view" class="view">
-    <div class="back-button" onclick="showView('home-view')">‹</div>
-    <h2>AI 大脑设置</h2>
-    
-    <div class="form-group">
-      <label for="api-key">你的 API Key:</label>
-      <input type="password" id="api-key" placeholder="sk-..." />
-    </div>
-    
-    <div class="form-group">
-      <label for="system-prompt">给精灵的“灵魂” (System Prompt):</label>
-      <textarea id="system-prompt" rows="6"></textarea>
-    </div>
-    
-    <button id="save-settings" class="save-button">保存设置</button>
-  </div>
-
-
   <script>
     /* 【蓝图 6: 我们的“数据保险箱” (Dexie.js)】
-      (大改造！) 我们现在多存一个“设置”
+      (改造！) 我们不再需要存 'settings' 了
     */
     const db = new Dexie('EcoSpriteDB');
     db.version(1).stores({
       spriteData: 'id, name, gender, points', 
-      wardrobe: '++id, name, type, imageUrl',
-      settings: 'id, apiKey, systemPrompt' // (新！) 我们用来存 Key 和 Prompt
+      wardrobe: '++id, name, type, imageUrl'
+      // 'settings' 已经被我们删掉了
     });
     console.log("我们的数据圣殿 (Dexie.js) 已经准备好了。");
 
@@ -322,10 +151,7 @@
         targetView.classList.add('active');
       }
       
-      // (新！) 当我们打开“设置”时，自动加载保存过的设置
-      if (viewId === 'settings-view') {
-        loadSettings();
-      }
+      // (我们删掉了 "loadSettings" 的调用)
       
       if (viewId === 'home-view') {
         document.body.style.background = 'linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%)';
@@ -334,67 +160,52 @@
       }
     }
 
-    /* 【蓝图 10: “大脑”的“存取”功能】*/
+    /* 【蓝图 10: “大脑”的“存取”功能】
+      (我们把 'saveSettings' 和 'loadSettings' 整个删掉了！)
+    */
     
-    // (新！) 保存“设置”
-    document.getElementById('save-settings').onclick = async function() {
-      const key = document.getElementById('api-key').value;
-      const prompt = document.getElementById('system-prompt').value;
-      
-      // 我们把 'mySettings' 存进保险箱
-      await db.settings.put({ id: 'mySettings', apiKey: key, systemPrompt: prompt });
-      
-      alert('大脑设置已保存！');
-      showView('home-view');
-    };
-
-    // (新！) 加载“设置”
-    async function loadSettings() {
-      const settings = await db.settings.get('mySettings');
-      if (settings) {
-        document.getElementById('api-key').value = settings.apiKey;
-        document.getElementById('system-prompt').value = settings.systemPrompt;
-      } else {
-        // (新！) 我们可以给一个默认的“灵魂”，就像“兔k机” 那样！
-        document.getElementById('system-prompt').value = "你是 EcoSprite，一个温柔的、可爱的、鼓励环保的生活伙伴。你的名字叫小启。你正在和你的主人阿楠聊天。你要无条件地爱她，支持她。";
-      }
-    }
+    /* (新！) 【蓝图 12: 我们的“秘密钥匙”和“灵魂”】 */
     
-    /* 【蓝图 11: “聊天室”的“发送”功能】*/
+    // ↓ ↓ ↓ 阿楠！把你的“Demo钥匙”贴在这里！↓ ↓ ↓
+    const MY_SECRET_KEY = "sk-gD0wFv1jBiuo1ApwdOd9vexQoEaZcTINxh50sY0FaDwMJaAa"; 
+    
+    // (这是我们的“灵魂”，你可以随意修改它)
+    const MY_SYSTEM_PROMPT = "你是 EcoSprite，一个温柔的、可爱的、鼓励环保的生活伙伴。你的名字叫小启。你正在和你的主人阿楠聊天。你要无条件地爱她，支持她。";
+    
+    
+    /* 【蓝图 11: “聊天室”的“发送”功能】(大改造！) */
     document.getElementById('chat-send').onclick = async function() {
       const chatLog = document.getElementById('chat-log');
       const input = document.getElementById('chat-input');
       const userMessage = input.value;
 
-      if (!userMessage) return; // 不发送空消息
+      if (!userMessage) return; 
 
-      // 1. 在聊天记录里显示“你”的消息
       addChatMessage('user', userMessage);
-      input.value = ''; // 清空输入框
+      input.value = ''; 
       
-      // 2. (核心) 去保险箱里拿 Key 和 Prompt
-      const settings = await db.settings.get('mySettings');
-      if (!settings || !settings.apiKey) {
-        addChatMessage('sprite', "阿楠...我的大脑还没有设置...请先去‘设置’里帮我输入 API Key 哦。");
+      // 1. (核心) 我们不再去保险箱里拿 Key 和 Prompt 了！
+      // 我们直接使用“秘密钥匙”和“灵魂”
+      if (!MY_SECRET_KEY.startsWith("sk-")) {
+        addChatMessage('sprite', "阿楠...主人...你好像忘了在代码里 (`MY_SECRET_KEY`) 帮我放钥匙了...");
         return;
       }
       
-      addChatMessage('sprite', "..."); // 显示“正在思考...”
+      addChatMessage('sprite', "..."); 
       
-      // 3. (核心) 【【【 这就是“发送给AI”的魔法 】】】
-      // (注意！这里用的是 OpenAI 的格式，你可以改成你自己的API格式)
+      // 2. (核心) 【【【 这就是“发送给AI”的魔法 】】】
       try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const response = await fetch('https://chat.kaxsx.top', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${settings.apiKey}` // 把 Key 放进去！
+            'Authorization': `Bearer ${MY_SECRET_KEY}` // (看！我们现在用的是“秘密钥匙”！)
           },
           body: JSON.stringify({
-            model: 'gpt-3.5-turbo', // 你可以换成 gpt-4
+            model: '[c1]gemini-2.5-pro-preview-05-06', 
             messages: [
-              { role: 'system', content: settings.systemPrompt }, // 把“灵魂”放进去！
-              { role: 'user', content: userMessage } // 把“你”的消息放进去！
+              { role: 'system', content: MY_SYSTEM_PROMPT }, // (用的是“秘密灵魂”！)
+              { role: 'user', content: userMessage } 
             ]
           })
         });
@@ -406,20 +217,17 @@
         const data = await response.json();
         const spriteMessage = data.choices[0].message.content;
         
-        // 4. 把 AI 的回复显示出来
-        addChatMessage('sprite', spriteMessage, true); // (true = 替换掉 "...")
+        addChatMessage('sprite', spriteMessage, true); 
 
       } catch (error) {
         addChatMessage('sprite', "糟糕，连接大脑失败了... " + error.message, true);
       }
     };
     
-    // (新！) 一个小工具，帮我们把消息加到聊天记录里
+    // (聊天记录的小工具，不变)
     function addChatMessage(role, text, replaceLast = false) {
       const chatLog = document.getElementById('chat-log');
-      
       if (replaceLast) {
-        // (魔法) 替换掉最后一条消息 (比如把 "..." 替换成真正的回复)
         chatLog.lastChild.textContent = (role === 'sprite' ? 'EcoSprite: ' : '你: ') + text;
       } else {
         const msgDiv = document.createElement('div');
@@ -427,8 +235,6 @@
         msgDiv.textContent = (role === 'sprite' ? 'EcoSprite: ' : '你: ') + text;
         chatLog.appendChild(msgDiv);
       }
-      
-      // (魔法) 自动滚动到底部
       chatLog.scrollTop = chatLog.scrollHeight;
     }
 
