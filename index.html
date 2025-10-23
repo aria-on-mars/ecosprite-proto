@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoSprite · Prototype</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stage {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #sprite {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      object-fit: contain;
+    }
+
+    .ring {
+      position: absolute;
+      width: 360px;
+      height: 360px;
+      pointer-events: none;
+    }
+
+    .bubble {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: none;
+      font-size: 28px;
+      backdrop-filter: blur(6px);
+      background: rgba(255, 255, 255, 0.6);
+      color: #065f46;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      pointer-events: auto;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .bubble:hover {
+      background: rgba(16, 185, 129, 0.9);
+      color: white;
+      transform: scale(1.05);
+    }
+
+    #msg {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #065f46;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <h1 style="color:#047857;">EcoSprite 🌿</h1>
+
+  <div class="stage">
+    <img id="sprite" src="https://upload.wikimedia.org/wikipedia/commons/3/3a/Animated_GIF_example.gif" alt="EcoSprite" />
+    <div class="ring">
+      <button class="bubble" style="top:-20px; left:148px;" onclick="say('Hello! 🌸')">💬</button>
+      <button class="bubble" style="top:70px; right:-20px;" onclick="say('Camera ready! 📷')">📷</button>
+      <button class="bubble" style="bottom:60px; right:-25px;" onclick="say('Walk logged! 🚶')">🚶</button>
+      <button class="bubble" style="bottom:-20px; left:150px;" onclick="say('Wardrobe opened! 🎀')">🎀</button>
+      <button class="bubble" style="bottom:60px; left:-25px;" onclick="say('Stats viewed! 📊')">📊</button>
+      <button class="bubble" style="top:70px; left:-20px;" onclick="say('Settings! ⚙️')">⚙️</button>
+    </div>
+  </div>
+
+  <div id="msg">Click a bubble to interact!</div>
+
+  <script>
+    function say(text) {
+      const msg = document.getElementById("msg");
+      msg.textContent = text;
+      // 小动效：点击后轻轻抖动
+      const sprite = document.getElementById("sprite");
+      sprite.style.transform = "scale(1.05)";
+      setTimeout(() => (sprite.style.transform = "scale(1)"), 200);
+    }
+  </script>
+</body>
+</html>
