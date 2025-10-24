@@ -466,7 +466,7 @@
       const timeoutId = setTimeout(() => {
         console.log("Fetch 20秒超时！正在中止...");
         controller.abort(); 
-      }, 20000); 
+      }, 300000); 
 
       try {
         const profile = await db.profile.get('userProfile');
