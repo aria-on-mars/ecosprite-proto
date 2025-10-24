@@ -305,7 +305,7 @@
       chatLog.scrollTop = chatLog.scrollHeight;
     }
     
-    /* 【【【 蓝图 10.2: “加小花”魔法！(V10 核心修复) 】】】 */
+    /* 【【【 蓝图 10.2: “加小花”魔法！(V10.1 核心修复) 】】】 */
     // (阿楠！这就是“绿色出行”能“动”起来的“魔法”！)
     async function logGreenAction(actionType, aiMessage = "") {
       let reward = 0;
@@ -325,24 +325,30 @@
           message = `你今天“绿色出行”了！太了不起！小小启为你 +${reward} 积分！🚶💚`;
         }
         
-        // (V10 核心修复！我们现在*真的*在操作 'stats' 账本了！)
+        // 【【【 V10.1 核心修复！(用“先读后写”代替 Dexie.inc) 】】】
         if (reward > 0) {
-          await db.stats.update('userStats', {
-            points: Dexie.inc(reward) 
-          }).catch(async (e) => {
-            // (保险) 如果是第一次，就新建一个
-            console.log("账本里没有 'userStats'，正在新建...");
-            await db.stats.put({id: 'userStats', points: reward});
+          // 1. (先读) 尝试去“保险箱”拿“账本”
+          const stats = await db.stats.get('userStats');
+          
+          // 2. 拿到“当前的小花”
+          const currentPoints = stats ? stats.points : 0;
+          
+          // 3. (后写) 加上“新的小花”，然后“存”回去！
+          await db.stats.put({
+            id: 'userStats', 
+            points: currentPoints + reward
           });
-          console.log(`成功增加了 ${reward} 积分！`);
+          
+          console.log(`成功增加了 ${reward} 积分！现在总共有 ${currentPoints + reward} 积分。`);
         }
+        // 【【【 V10.1 修复结束 】】】
         
-        // (V10 核心修复！Alert 必须在 "await" *之后*！)
+        // (Alert 必须在 "await" *之后*！)
         alert(message); 
         showView('home-view');
 
       } catch (error) {
-        // (V10 核心修复！抓住那个“无声”的崩溃！)
+        // (抓住那个“无声”的崩溃！)
         console.error("logGreenAction 魔法失败了:", error);
         alert("糟糕...小小启的“账本”好像卡住了... " + error.message);
       }
