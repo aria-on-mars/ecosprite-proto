@@ -29,20 +29,25 @@
       justify-content: center;
       color: var(--color-text);
       transition: background-color 0.5s;
+      /* (V10 修复) 确保在手机上不会“溢出” */
+      overflow: hidden; 
     }
     .view { 
       display: none; /* 默认全都是 "display: none" */
       width: 100%; 
+      max-width: 600px; /* (V10 修复) 适配电脑 */
       height: 100%; 
       flex-direction: column; 
       align-items: center; 
       justify-content: center; 
       animation: fadeIn 0.5s ease; 
+      box-sizing: border-box; /* (V10 修复) */
+      padding-bottom: 20px; /* (V10 修复) 留出空间 */
     }
     .view.active { display: flex; }
     @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
     #home-view h1 { color: var(--color-primary-dark); margin: 0; position: absolute; top: 40px; }
-    .stage { position: relative; width: 250px; height: 250px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); display: flex; align-items: center; justify-content: center; }
+    .stage { position: relative; width: 250px; height: 250px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1); display: flex; align-items: center; justify-content: center; margin-top: 40px; }
     @keyframes breathe { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
     #sprite { width: 150px; height: 150px; object-fit: contain; z-index: 10; animation: breathe 4s ease-in-out infinite; }
     .bubble { position: absolute; width: 100px; height: 100px; border-radius: 50%; border: none; backdrop-filter: blur(6px); background: var(--color-bubble-bg); color: var(--color-text); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15); cursor: pointer; transition: transform 0.2s, background 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 5; }
@@ -51,7 +56,7 @@
     .bubble .label { font-size: 14px; font-weight: 600; margin-top: 5px; }
     #msg { margin-top: 20px; font-size: 18px; color: var(--color-text); text-align: center; }
     .view h2 { color: var(--color-primary-dark); }
-    .back-button { position: absolute; top: 40px; left: 30px; font-size: 24px; font-weight: 600; color: var(--color-primary-dark); cursor: pointer; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
+    .back-button { position: absolute; top: 40px; left: 30px; font-size: 24px; font-weight: 600; color: var(--color-primary-dark); cursor: pointer; padding: 10px; background: rgba(255, 255, 255, 0.5); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; z-index: 100; }
     .form-group { width: 80%; margin: 10px 0; }
     .form-group label { font-weight: 600; }
     .form-group input, .form-group textarea { width: 100%; margin-top: 5px; border-radius: 12px; border: 2px solid var(--color-primary-dark); padding: 10px; font-size: 16px; box-sizing: border-box; }
@@ -178,32 +183,34 @@
   
 
   <script>
-    /* 【【【 V9 终极版 脚本 】】】 */
+    /* 【【【 V10 “最终世界” 脚本 】】】 */
 
     /* 【蓝图 19: 摄像头开关】 */
     let cameraStream = null; 
 
-    /* 【蓝图 17: 保险箱 (V7)】 */
+    /* 【【【 蓝图 10.1: “地基”修正！(V10 核心修复) 】】】 */
+    // (阿楠！这就是“地基”！我们现在用的是 'db.version(2)' 和 'stats' 账本！)
     const db = new Dexie('EcoSpriteDB');
     db.version(2).stores({
       profile: 'id, userName, spriteName', 
-      stats: 'id, points', 
+      stats: 'id, points', // (新！) 我们把 'points' 移到了 'stats' 表
       wardrobe: '++id, name, type, imageUrl'
+      // (我们删掉了旧的 'points' 表)
     }).upgrade(tx => {
-      return tx.points.toCollection().first(p => {
+      // (魔法！) 当“保险箱”升级时，我们帮用户把旧积分转过来
+      // (这个 'points' 是 V1 的旧账本名)
+      return tx.table('points').toCollection().first(p => {
         if (p) return tx.stats.put({id: 'userStats', points: p.value});
       });
     });
     console.log("我们的数据圣殿 (V2) 已经升级准备好了！");
 
 
-    /* 【蓝图 7: 我们的“门” (V8 升级版)】*/
+    /* 【蓝图 7: 我们的“门” (V8)】*/
     function showView(viewId) {
-      // (V9 修复！) 在“换房间”之前，先检查要不要“关摄像头”
       if (viewId !== 'camera-view' && cameraStream) {
         stopCamera();
       }
-
       document.querySelectorAll('.view').forEach(view => {
         view.classList.remove('active');
       });
@@ -211,20 +218,19 @@
       if (targetView) {
         targetView.classList.add('active');
       }
-      
       if (viewId === 'home-view') {
         document.body.style.background = 'linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%)';
         updateHomeGreeting();
       } else {
         document.body.style.background = '#ffffff';
       }
-      
       if (viewId === 'chat-view') {
         updateChatGreeting();
       }
     }
 
-    /* 【蓝图 12: 秘密钥匙 (V5)】 */
+    /* 【蓝图 12: 秘密钥匙】 */
+    // ↓ ↓ ↓ 阿楠！把你的10刀“Demo钥匙”贴在这里！↓ ↓ ↓
     const MY_SECRET_KEY = "sk-gD0wFv1jBiuo1ApwdOd9vexQoEaZcTINxh50sY0FaDwMJaAa"; 
     
     /* 【蓝图 13: 动态灵魂 (V5)】 */
@@ -239,23 +245,19 @@
     }
     
     
-    /* 【蓝图 11: 聊天室 (V5.2 修复版)】 */
+    /* 【蓝图 11: 聊天室 (V5.2)】 */
     document.getElementById('chat-send').onclick = async function() {
       const chatLog = document.getElementById('chat-log');
       const input = document.getElementById('chat-input');
       const userMessage = input.value;
-
       if (!userMessage) return; 
       addChatMessage('user', userMessage);
       input.value = ''; 
-      
       if (!MY_SECRET_KEY.startsWith("sk-")) {
         addChatMessage('sprite', "阿楠...主人...你好像忘了在代码里 (`MY_SECRET_KEY`) 帮我放钥匙了...");
         return;
       }
-      
       addChatMessage('sprite', "..."); 
-      
       try {
         const dynamicSystemPrompt = await getSystemPrompt();
         const response = await fetch('https://chat.kaxsx.top/v1/chat/completions', { 
@@ -270,25 +272,20 @@
             stream: false 
           })
         });
-
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
            throw new Error(`糟糕，服务器没有给我“密语”(JSON)，它给了我 "${contentType}"`);
         }
-        
         const data = await response.json();
-
         if (data.error) {
           throw new Error(`AI的“大脑”报错了: ${data.error.message || JSON.stringify(data.error)}`);
         }
-        
         if (data.choices && data.choices.length > 0 && data.choices[0].message) {
           const spriteMessage = data.choices[0].message.content;
           addChatMessage('sprite', spriteMessage, true);
         } else {
           throw new Error("AI没有返回聊天内容...");
         }
-
       } catch (error) {
         addChatMessage('sprite', "糟糕，连接大脑失败了... " + error.message, true);
       }
@@ -308,34 +305,47 @@
       chatLog.scrollTop = chatLog.scrollHeight;
     }
     
-    /* 【蓝图 17: “绿色行动”魔法 (V7)】 */
+    /* 【【【 蓝图 10.2: “加小花”魔法！(V10 核心修复) 】】】 */
+    // (阿楠！这就是“绿色出行”能“动”起来的“魔法”！)
     async function logGreenAction(actionType, aiMessage = "") {
       let reward = 0;
       let message = "";
       
-      if (actionType === '可回收物') {
-        reward = 10; 
-        message = aiMessage || `哇！你识别了“可回收物”！太棒了！小小启为你 +${reward} 积分！😊`;
-      } 
-      else if (actionType === '不可回收') {
-        reward = 0; 
-        message = aiMessage || `噢... 这是一个“不可回收”的物品... 😢 没关系，我们下次试着少用它一点点，好吗？`;
+      try {
+        if (actionType === '可回收物') {
+          reward = 10; 
+          message = aiMessage || `哇！你识别了“可回收物”！太棒了！小小启为你 +${reward} 积分！😊`;
+        } 
+        else if (actionType === '不可回收') {
+          reward = 0; 
+          message = aiMessage || `噢... 这是一个“不可回收”的物品... 😢 没关系，我们下次试着少用它一点点，好吗？`;
+        }
+        else if (actionType === '绿色出行') {
+          reward = 20; 
+          message = `你今天“绿色出行”了！太了不起！小小启为你 +${reward} 积分！🚶💚`;
+        }
+        
+        // (V10 核心修复！我们现在*真的*在操作 'stats' 账本了！)
+        if (reward > 0) {
+          await db.stats.update('userStats', {
+            points: Dexie.inc(reward) 
+          }).catch(async (e) => {
+            // (保险) 如果是第一次，就新建一个
+            console.log("账本里没有 'userStats'，正在新建...");
+            await db.stats.put({id: 'userStats', points: reward});
+          });
+          console.log(`成功增加了 ${reward} 积分！`);
+        }
+        
+        // (V10 核心修复！Alert 必须在 "await" *之后*！)
+        alert(message); 
+        showView('home-view');
+
+      } catch (error) {
+        // (V10 核心修复！抓住那个“无声”的崩溃！)
+        console.error("logGreenAction 魔法失败了:", error);
+        alert("糟糕...小小启的“账本”好像卡住了... " + error.message);
       }
-      else if (actionType === '绿色出行') {
-        reward = 20; 
-        message = `你今天“绿色出行”了！太了不起！小小启为你 +${reward} 积分！🚶💚`;
-      }
-      
-      if (reward > 0) {
-        await db.stats.update('userStats', {
-          points: Dexie.inc(reward) 
-        }).catch(async () => {
-          await db.stats.put({id: 'userStats', points: reward});
-        });
-      }
-      
-      alert(message); 
-      showView('home-view');
     }
 
     
@@ -343,12 +353,10 @@
     document.getElementById('save-profile').onclick = async function() {
       const userName = document.getElementById('user-name-input').value;
       const spriteName = document.getElementById('sprite-name-input').value;
-      
       if (!userName || !spriteName) {
         alert("请给你和你的小精灵都起个名字哦！");
         return;
       }
-      
       await db.profile.put({ id: 'userProfile', userName: userName, spriteName: spriteName });
       showView('home-view');
     };
@@ -367,7 +375,6 @@
       const profile = await db.profile.get('userProfile');
       if (profile) {
         document.getElementById('chat-title').textContent = `和 ${profile.spriteName} 聊天`;
-        
         const chatLog = document.getElementById('chat-log');
         if (chatLog.children.length === 0) {
           addChatMessage('sprite', `你好，${profile.userName}！和我说说话吧。`);
@@ -375,112 +382,90 @@
       }
     }
 
-    /* 【【【 蓝图 19 & 20: “真实之眼” (V8 + V9 Bug修复) 】】】 */
+    /* 【蓝图 19 & 20: “真实之眼” (V9.1)】 */
 
-    // (新！) “关灯”魔法：关掉摄像头
     function stopCamera() {
-      // (V9 终极修复！) 我们要加一个“超级安全锁”！
-      // 检查 "cameraStream" 是不是“真的” (truthy)，
-      // 并且 "cameraStream.getTracks" 是不是一个“真的”函数！
+      // (V9 终极修复)
       if (cameraStream && typeof cameraStream.getTracks === 'function') {
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStream = null;
         console.log("摄像头已关闭。");
       } else {
         console.log("摄像头已经是关闭状态，无需操作。");
-        cameraStream = null; // (保险) 确保它一定是 null
+        cameraStream = null; 
       }
     }
 
-    // (新！) “开灯”魔法：启动摄像头
     document.getElementById('start-camera-btn').onclick = async function() {
       const videoEl = document.getElementById('camera-feed');
       const startBtn = document.getElementById('start-camera-btn');
       const captureBtn = document.getElementById('capture-btn');
-      
-      // (V9 修复！) 我们把“关灯”从这里移走了！
-      // stopCamera(); // (旧的 V8 代码，它会在这里引发 Bug)
-      
       try {
-        // (保险) 先确保万无一失
         stopCamera(); 
-        
         cameraStream = await navigator.mediaDevices.getUserMedia({ 
           video: { facingMode: 'environment' }, 
           audio: false 
         });
-        
         console.log("摄像头已启动！");
         videoEl.srcObject = cameraStream;
         videoEl.play(); 
-        
         videoEl.style.display = 'block'; 
         startBtn.style.display = 'none'; 
         captureBtn.style.display = 'block'; 
-
       } catch (err) {
         console.error("启动摄像头失败:", err);
         alert("糟糕！启动摄像头失败了... " + err.message);
-        
-        // (B计划) 退回 V7
-        alert("没关系，你也可以直接在下面的输入框里告诉我你拿的是什么哦！");
         document.getElementById('camera-ai-section').style.display = 'block';
         startBtn.style.display = 'none';
       }
     };
 
-    // (新！) “拍照”魔法：定格画面
     document.getElementById('capture-btn').onclick = function() {
       const videoEl = document.getElementById('camera-feed');
       const canvasEl = document.getElementById('camera-snapshot');
       const context = canvasEl.getContext('2d');
-      
       canvasEl.width = videoEl.videoWidth;
       canvasEl.height = videoEl.videoHeight;
       context.drawImage(videoEl, 0, 0, videoEl.videoWidth, videoEl.videoHeight);
-      
       videoEl.style.display = 'none'; 
       canvasEl.style.display = 'block'; 
-      
       document.getElementById('capture-btn').style.display = 'none'; 
       document.getElementById('reset-camera-btn').style.display = 'block'; 
-      
       document.getElementById('camera-ai-section').style.display = 'block';
-      
-      stopCamera(); // (关灯！拍照后必须关灯)
+      stopCamera(); 
     };
     
-    // (新！) “重拍”魔法
     document.getElementById('reset-camera-btn').onclick = function() {
       document.getElementById('camera-snapshot').style.display = 'none'; 
       document.getElementById('camera-ai-section').style.display = 'none'; 
       document.getElementById('reset-camera-btn').style.display = 'none'; 
       document.getElementById('start-camera-btn').style.display = 'block'; 
-      
-      // (保险) 确保万无一失
       stopCamera();
     };
 
-    /* 【【【 蓝图 18 (V9.1 修复版): “会思考的相机”之“大脑” 】】】 */
+    /* 【蓝图 18: “会思考的相机”之“大脑” (V9.2 修复版)】 */
     document.getElementById('camera-scan-btn').onclick = async function() {
       const input = document.getElementById('camera-input');
       const loadingMsg = document.getElementById('camera-loading');
       const itemName = input.value;
-
       if (!itemName) {
         alert("你好像忘了输入物品的名字哦！");
         return;
       }
-      
       loadingMsg.style.display = 'block';
       input.disabled = true;
       this.disabled = true; 
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log("Fetch 20秒超时！正在中止...");
+        controller.abort(); 
+      }, 20000); 
 
       try {
         const profile = await db.profile.get('userProfile');
         const userName = profile ? profile.userName : '主人';
         
-        // (我们的“灵魂”Prompt，一点都不用改)
         const cameraSystemPrompt = `
           你是 EcoSprite，一个可爱的垃圾分类专家。你的主人 ${userName} 正在“扫描”一个物品，你要帮他/她分类。
           你的任务是：
@@ -491,7 +476,7 @@
           3.  在“关键词”后面，用“小小启”的、可爱的、撒娇的语气，告诉 ${userName} 它该扔到哪个桶（比如黄色、绿色、红色、或垃圾填埋桶），并鼓励他/她。
               -   (如果是[REWARD])：要开心！告诉他/她我们一起“种了一朵小花”！
               -   (如果是[COAX])：要撒娇！告诉他/她我们要“尽量少用”它哦！
-        `; 
+        `;
 
         const response = await fetch('https://chat.kaxsx.top/v1/chat/completions', { 
           method: 'POST',
@@ -500,41 +485,39 @@
             model: '[c1]gemini-2.5-pro-preview-05-06', 
             messages: [
               { role: 'system', content: cameraSystemPrompt },
-              // ↓ ↓ ↓ 阿楠！看这里！这就是我们的“V9.1修复”！↓ ↓ ↓
-              { role: 'user', content: `好的，请帮我分析 "${itemName}" 这个物品。` } 
-              // (我们加上了这句“必须的”用户提问！)
+              { role: 'user', content: `好的，请帮我分析 "${itemName}" 这个物品。` } // (V9.1 修复)
             ],
             stream: false 
-          })
+          }),
+          signal: controller.signal // (V9.2 怀表)
         });
 
-        // (后面的代码... 和V9终极版一样，都是对的！)
+        clearTimeout(timeoutId); // (V9.2 关闹钟)
         const data = await response.json();
 
         if (data.error) {
           throw new Error(`AI的“大脑”报错了: ${data.error.message || JSON.stringify(data.error)}`);
         }
-
         if (data.choices && data.choices.length > 0 && data.choices[0].message) {
           const aiReply = data.choices[0].message.content;
-
           if (aiReply.startsWith('[REWARD]')) {
             const cuteMessage = aiReply.substring(8).trim(); 
             logGreenAction('可回收物', cuteMessage); 
-            
           } else if (aiReply.startsWith('[COAX]')) {
             const cuteMessage = aiReply.substring(6).trim();
             logGreenAction('不可回收', cuteMessage);
-            
           } else {
             alert("小小启好像看不太清... " + aiReply);
           }
         } else {
           throw new Error("AI没有返回聊天内容...");
         }
-
       } catch (error) {
-        alert("糟糕，连接大脑失败了... " + error.message);
+        if (error.name === 'AbortError') {
+          alert("糟糕...小小启的“大脑”连接超时了... 😢 那个‘传送门’好像太忙了，我们待会再试试，好吗？");
+        } else {
+          alert("糟糕，连接大脑失败了... " + error.message);
+        }
       } finally {
         loadingMsg.style.display = 'none';
         input.disabled = false;
@@ -542,6 +525,7 @@
         input.value = ''; 
       }
     };
+
 
     /* 【蓝图 15: 我们的“迎宾员” (V5)】 */
     (async function() {
