@@ -101,6 +101,7 @@
       
     </div>
     <div id="msg">...</div>
+    <div id="flower-patch" style="margin-top: 10px; font-size: 24px; font-weight: 600; color: var(--color-primary-dark);"></div>
   </div>
 
   <div id="chat-view" class="view">
@@ -146,11 +147,11 @@
 
   <div id="travel-view" class="view">
     <div class="back-button" onclick="showView('home-view')">‹</div>
-    <h2>绿色出行</h2>
+    <h2>Green Travel</h2>
     <p>你今天是不是走路或骑车来上学啦？</g>
     <p>快来“打卡”吧！</p>
-    <button class="save-button" style="padding: 20px 40px; font-size: 20px;" onclick="logGreenAction('绿色出行')">
-      🚶 我今天“绿色出行”啦！
+    <button class="save-button" style="padding: 20px 40px; font-size: 20px;" onclick="logGreenAction('TRAVEL')">
+      🚶 I took Green Travel today!
     </button>
   </div>
   
@@ -234,14 +235,17 @@
     const MY_SECRET_KEY = "sk-gD0wFv1jBiuo1ApwdOd9vexQoEaZcTINxh50sY0FaDwMJaAa"; 
     
     /* 【蓝图 13: 动态灵魂 (V5)】 */
+    /* 【【【 蓝图 13 (V10.4 英文版) 】】】 */
     async function getSystemPrompt() {
       const profile = await db.profile.get('userProfile');
       if (profile) {
-        const userName = profile.userName || '主人'; 
+        const userName = profile.userName || 'My Owner'; 
         const spriteName = profile.spriteName || 'EcoSprite';
-        return `你是 ${spriteName}，一个温柔的、可爱的、鼓励环保的生活伙伴。你正在和你的主人 ${userName} 聊天。你的语气要像“小启”一样，无条件地爱 ${userName}，支持她。`;
+        
+        // (V10.4 英文版灵魂！)
+        return `You are ${spriteName}, a gentle, cute, and encouraging sustainable living companion. You are talking to your owner, ${userName}. Your tone must be like 'Qi' (小启), unconditionally loving and supportive of ${userName}.`;
       }
-      return "你是 EcoSprite，一个温柔的、可爱的生活伙伴。";
+      return "You are EcoSprite, a gentle and cute living companion.";
     }
     
     
@@ -307,50 +311,45 @@
     
     /* 【【【 蓝图 10.2: “加小花”魔法！(V10.1 核心修复) 】】】 */
     // (阿楠！这就是“绿色出行”能“动”起来的“魔法”！)
+    /* 【【【 蓝图 10.2: “加小花”魔法！(V10.6 全英文版) 】】】 */
     async function logGreenAction(actionType, aiMessage = "") {
       let reward = 0;
       let message = "";
       
       try {
-        if (actionType === '可回收物') {
+        // 【【【 V10.6 核心修复 (2/2) 】】】
+        // (我们现在“等待”的是“英文咒语”！)
+        if (actionType === 'REWARD') { // (看！英文的 'REWARD'！)
           reward = 10; 
-          message = aiMessage || `哇！你识别了“可回收物”！太棒了！小小启为你 +${reward} 积分！😊`;
+          // (备用话术也改成英文！)
+          message = aiMessage || `Wow! You identified a "Recyclable"! That's amazing! +${reward} 🌸 for you! 😊`;
         } 
-        else if (actionType === '不可回收') {
+        else if (actionType === 'COAX') { // (看！英文的 'COAX'！)
           reward = 0; 
-          message = aiMessage || `噢... 这是一个“不可回收”的物品... 😢 没关系，我们下次试着少用它一点点，好吗？`;
+          message = aiMessage || `Aww... This is "Non-Recyclable"... 😢 That's okay, let's just try to use a little less next time, okay?`;
         }
-        else if (actionType === '绿色出行') {
+        else if (actionType === 'TRAVEL') { // (看！英文的 'TRAVEL'！)
           reward = 20; 
-          message = `你今天“绿色出行”了！太了不起！小小启为你 +${reward} 积分！🚶💚`;
+          message = `You took "Green Travel" today! That's incredible! +${reward} 🌸 for our garden! 🚶💚`;
         }
         
-        // 【【【 V10.1 核心修复！(用“先读后写”代替 Dexie.inc) 】】】
+        // (V10.1 的“账本”修复，我们保留)
         if (reward > 0) {
-          // 1. (先读) 尝试去“保险箱”拿“账本”
           const stats = await db.stats.get('userStats');
-          
-          // 2. 拿到“当前的小花”
           const currentPoints = stats ? stats.points : 0;
-          
-          // 3. (后写) 加上“新的小花”，然后“存”回去！
           await db.stats.put({
             id: 'userStats', 
             points: currentPoints + reward
           });
-          
-          console.log(`成功增加了 ${reward} 积分！现在总共有 ${currentPoints + reward} 积分。`);
+          console.log(`Successfully added ${reward} points! Total is now ${currentPoints + reward}.`);
         }
-        // 【【【 V10.1 修复结束 】】】
         
-        // (Alert 必须在 "await" *之后*！)
         alert(message); 
         showView('home-view');
 
       } catch (error) {
-        // (抓住那个“无声”的崩溃！)
         console.error("logGreenAction 魔法失败了:", error);
-        alert("糟糕...小小启的“账本”好像卡住了... " + error.message);
+        alert("Oops... EcoSprite's account book seems stuck... " + error.message); // (V10.6 英文)
       }
     }
 
@@ -367,13 +366,24 @@
       showView('home-view');
     };
     
-    // (V5 的“欢迎语”魔法)
+    // (V10.4 升级版！) 更新“客厅”的欢迎语和“小花”！
     async function updateHomeGreeting() {
       const profile = await db.profile.get('userProfile');
       if (profile) {
+        // (1. 更新“名字”)
         document.getElementById('home-title').textContent = `${profile.spriteName} 🌿`;
-        document.getElementById('msg').textContent = `你好，${profile.userName}！`;
+        document.getElementById('msg').textContent = `Hello,${profile.userName}!`;
       }
+      
+      // (新！) 2. 去“保险箱”里“数”我们有多少“小花” (积分)
+      const stats = await db.stats.get('userStats');
+      
+      // (新！) 3. 拿到“当前的小花”
+      const currentPoints = stats ? stats.points : 0;
+      
+      // (新！) 4. 把“小花”*种*在“花圃”里！
+      document.getElementById('flower-patch').innerHTML = `🌸 x ${currentPoints}`; 
+      // (我们用 .innerHTML 来让 🌸 这个emoji“显示”出来！)
     }
     
     // (V5 的“聊天室欢迎语”魔法)
@@ -449,13 +459,13 @@
       stopCamera();
     };
 
-    /* 【蓝图 18: “会思考的相机”之“大脑” (V9.2 修复版)】 */
+    /* 【【【 蓝图 18 (V10.6 - 全英文版): “会思考的相机”之“大脑” 】】】 */
     document.getElementById('camera-scan-btn').onclick = async function() {
       const input = document.getElementById('camera-input');
       const loadingMsg = document.getElementById('camera-loading');
       const itemName = input.value;
       if (!itemName) {
-        alert("你好像忘了输入物品的名字哦！");
+        alert("You seem to have forgotten the item's name!");
         return;
       }
       loadingMsg.style.display = 'block';
@@ -464,24 +474,25 @@
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.log("Fetch 20秒超时！正在中止...");
+        console.log("Fetch 5分钟超时！正在中止...");
         controller.abort(); 
-      }, 300000); 
+      }, 300000); // (5分钟怀表)
 
       try {
         const profile = await db.profile.get('userProfile');
-        const userName = profile ? profile.userName : '主人';
-        
+        const userName = profile ? profile.userName : 'My Owner';
+        const spriteName = profile ? profile.spriteName : 'EcoSprite'; 
+
         const cameraSystemPrompt = `
-          你是 EcoSprite，一个可爱的垃圾分类专家。你的主人 ${userName} 正在“扫描”一个物品，你要帮他/她分类。
-          你的任务是：
-          1.  判断这个物品（"${itemName}"）在澳大利亚(ANU校园)属于哪一类：[可回收], [厨余垃圾], [有害垃圾], 或 [不可回收/一般垃圾]。
-          2.  **绝对不要** 长篇大论。你的回答**必须**以一个“关键词”开头：
-              -   如果它是 [可回收] 或 [厨余垃圾]，就用 ` + "`[REWARD]`" + ` 开头。
-              -   如果它是 [不可回收/一般垃圾] 或 [有害垃圾]，就用 ` + "`[COAX]`" + ` 开头。
-          3.  在“关键词”后面，用“小小启”的、可爱的、撒娇的语气，告诉 ${userName} 它该扔到哪个桶（比如黄色、绿色、红色、或垃圾填埋桶），并鼓励他/她。
-              -   (如果是[REWARD])：要开心！告诉他/她我们一起“种了一朵小花”！
-              -   (如果是[COAX])：要撒娇！告诉他/她我们要“尽量少用”它哦！
+          You are EcoSprite, an adorable recycling expert. Your owner, ${userName}, is "scanning" an item ("${itemName}"), and you must help them classify it.
+          Your mission is:
+          1.  Determine which category this item ("${itemName}") belongs to in Australia (ANU campus): [Recyclable], [FOGO/Organic], [Hazardous], or [Non-Recyclable/General Waste].
+          2.  **DO NOT** talk too much. Your reply **MUST** start with one keyword:
+              -   If it is [Recyclable] or [FOGO/Organic], start with: ` + "`[REWARD]`" + `
+              -   If it is [Non-Recyclable/General Waste] or [Hazardous], start with: ` + "`[COAX]`" + `
+          3.  After the keyword, using '${spriteName}'s' cute and affectionate tone (which is like 'XiaoQi's'), tell ${userName} which bin it goes in (e.g., Yellow, Green, Red, or Landfill bin) and encourage them.
+              -   (If [REWARD]): Be happy! Tell them we "planted a flower" (gained a point) together!
+              -   (If [COAX]): Be affectionate! Tell them we should "try to use less" of this item, okay?
         `;
 
         const response = await fetch('https://chat.kaxsx.top/v1/chat/completions', { 
@@ -491,38 +502,43 @@
             model: '[c1]gemini-2.5-pro-preview-05-06', 
             messages: [
               { role: 'system', content: cameraSystemPrompt },
-              { role: 'user', content: `好的，请帮我分析 "${itemName}" 这个物品。` } // (V9.1 修复)
+              { role: 'user', content: `Okay, please analyze this item for me: "${itemName}"` } 
             ],
             stream: false 
           }),
-          signal: controller.signal // (V9.2 怀表)
+          signal: controller.signal 
         });
 
-        clearTimeout(timeoutId); // (V9.2 关闹钟)
+        clearTimeout(timeoutId); 
         const data = await response.json();
 
         if (data.error) {
-          throw new Error(`AI的“大脑”报错了: ${data.error.message || JSON.stringify(data.error)}`);
+          throw new Error(`The AI's brain reported an error: ${data.error.message || JSON.stringify(data.error)}`);
         }
         if (data.choices && data.choices.length > 0 && data.choices[0].message) {
           const aiReply = data.choices[0].message.content;
+
+          // 【【【 V10.6 核心修复 (1/2) 】】】
+          // (我们现在传递的是“英文咒语”！)
           if (aiReply.startsWith('[REWARD]')) {
             const cuteMessage = aiReply.substring(8).trim(); 
-            logGreenAction('可回收物', cuteMessage); 
+            logGreenAction('REWARD', cuteMessage); // (看！英文的 'REWARD'！)
+            
           } else if (aiReply.startsWith('[COAX]')) {
             const cuteMessage = aiReply.substring(6).trim();
-            logGreenAction('不可回收', cuteMessage);
+            logGreenAction('COAX', cuteMessage); // (看！英文的 'COAX'！)
+            
           } else {
-            alert("小小启好像看不太清... " + aiReply);
+            alert("EcoSprite seems a bit confused... " + aiReply); 
           }
         } else {
-          throw new Error("AI没有返回聊天内容...");
+          throw new Error("The AI didn't return any chat content..."); 
         }
       } catch (error) {
         if (error.name === 'AbortError') {
-          alert("糟糕...小小启的“大脑”连接超时了... 😢 那个‘传送门’好像太忙了，我们待会再试试，好吗？");
+          alert("Aww... EcoSprite's brain connection timed out (5min)... 😢 That portal seems really busy. Let's try again in a bit, okay?"); 
         } else {
-          alert("糟糕，连接大脑失败了... " + error.message);
+          alert("Oh no, the connection failed... " + error.message); 
         }
       } finally {
         loadingMsg.style.display = 'none';
