@@ -113,6 +113,17 @@
         width: 90%;
         margin-top: 20px;
         flex-wrap: wrap; /* 如果屏幕太窄就换行 */
+        /* 【【【 V11.12 核心修复：“衣架”自己滚动！ 】】】 */
+        overflow-y: auto; /* 1. 允许“垂直滚动”！ */
+        max-height: calc(100vh - 250px); /* 2. (魔法！) 给它一个“最大高度”！
+                                            (100vh = 整个屏幕高)
+                                            (250px = 大概是标题+说明+按钮+边距的高度，
+                                                     你可以根据实际情况调整这个数字！)
+                                            (超出这个高度，滚动条就会出现！) */
+        /* 【【【 V11.12 修复结束 】】】 */
+        
+        /* (V11.12 优化) 给底部一点空间，防止被手机底部栏挡住 */
+        padding-bottom: 30px;
     }
     .wardrobe-item {
         border: 2px solid var(--color-primary);
