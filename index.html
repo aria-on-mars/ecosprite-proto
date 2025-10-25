@@ -290,7 +290,7 @@
     let arCameraStream = null; 
 
     /* 【【【 蓝图 11.7: 保险箱 (V3 - 加入衣柜数据!) 】】】 */
-    const db = new Dexie('EcoSpriteDB');
+    const db = new Dexie('EcoSpriteDB_V3');
     // (注意！版本号升到了 3 !)
     db.version(3).stores({
       profile: 'id, userName, spriteName, equippedOutfitId', // (新！) 记录穿哪件
@@ -299,20 +299,18 @@
     }).upgrade(tx => { 
         // (V11.7 升级!) 从 V2 升级到 V3 时，
         // 我们要初始化“衣柜”里的衣服，和主人默认穿的衣服！
-        console.log("Upgrading DB from v2 to v3...");
+        console.log("Running upgrade function for the NEW DB (v3)...");
         const initialOutfits = [
             { id: 'initial', name: 'Initial Sprite', imageUrl: 'assets/ecosprite-1.png', requiredPoints: 0 },
             { id: 'flower', name: 'Flower Wreath', imageUrl: 'assets/ecosprite-2.png', requiredPoints: 100 },
             { id: 'forest', name: 'Forest Adventure', imageUrl: 'assets/ecosprite-3.png', requiredPoints: 200 }
         ];
         // 把衣服信息批量加进 'wardrobe' 表
-        // (V11.7 修复！这里用 bulkPut)
         return tx.wardrobe.bulkPut(initialOutfits).then(() => {
-            // 给 'profile' 表增加默认装备 (如果 profile 已存在)
-            return tx.profile.where('id').equals('userProfile').modify({ equippedOutfitId: 'initial' });
+            // (我们不需要再改 profile 了，因为这是“新家”，profile 还不存在)
+            console.log("Initial outfits added to the NEW wardrobe.");
         }).catch(err => {
-             console.error("Failed during DB upgrade to v3:", err);
-             // 如果 profile 不存在 (比如第一次安装)，就在领养时设置
+             console.error("Failed during NEW DB (v3) upgrade:", err);
         });
      });
     console.log("Our Data Sanctuary (V3) is ready!");
