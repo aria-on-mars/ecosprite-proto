@@ -706,8 +706,7 @@
       }
     };
 
-    /* 【【【 蓝图 21: AR 模拟魔法 (V11) 】】】 */
-    // (这也是我上次省略掉的！)
+    /* 【【【 蓝图 21 (V11.13 - 统一着装版): AR 模拟魔法 】】】 */
     document.getElementById('start-ar-btn').onclick = async function() {
         const videoEl = document.getElementById('ar-camera-feed');
         const spriteOverlay = document.getElementById('ar-sprite-overlay');
@@ -729,9 +728,28 @@
                 videoEl.srcObject = arCameraStream;
                 videoEl.play(); 
                 
-                videoEl.style.display = 'block'; 
-                spriteOverlay.style.display = 'block'; 
-                startBtn.textContent = '❌ Deactivate AR View'; 
+                // 【【【 V11.13 核心修复：更新 AR 精灵的衣服！ 】】】
+                let currentSpriteUrl = 'assets/ecosprite-1.png'; // (默认)
+                try {
+                    const profile = await db.profile.get('userProfile');
+                    if (profile && profile.equippedOutfitId) {
+                        const equippedOutfit = await db.wardrobe.get(profile.equippedOutfitId);
+                        if (equippedOutfit && equippedOutfit.imageUrl) {
+                            currentSpriteUrl = equippedOutfit.imageUrl; // (找到了！)
+                        } else {
+                             console.warn(`AR View: Equipped outfit ID "${profile.equippedOutfitId}" not found. Using default.`);
+                        }
+                    }
+                } catch (dbError) {
+                    console.error("AR View: Error fetching profile/outfit:", dbError);
+                }
+                // (把找到的衣服图片，设置给 AR 精灵！)
+                spriteOverlay.src = currentSpriteUrl; 
+                // 【【【 V11.13 修复结束 】】】
+                
+                videoEl.style.display = 'block'; // 显示摄像头画面
+                spriteOverlay.style.display = 'block'; // 显示精灵 (现在是正确的衣服了！)
+                startBtn.textContent = '❌ Deactivate AR View'; // (改变按钮文字)
 
             } catch (err) {
                 console.error("Failed to start AR camera:", err); 
