@@ -205,8 +205,14 @@
   </div>
 
   <div id="chat-view" class="view">
-    <div class="back-button" onclick="showView('home-view')">‹</div>
-    <h2 id="chat-title">Chat Room</h2> 
+    <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center; margin-top: 30px; margin-bottom: -10px;"> {/* (V11.17 新增容器) */}
+        <div class="back-button" style="position: absolute; top: 50%; left: 30px; transform: translateY(-50%); margin-top: 0;">‹</div> {/* (V11.17 微调返回按钮位置) */}
+        
+        <img id="chat-sprite-icon" src="assets/ecosprite-1.png" alt="sprite" style="width: 40px; height: 40px; object-fit: contain; margin-right: 10px; vertical-align: middle;">
+        
+        <h2 id="chat-title" style="margin: 0; vertical-align: middle;">Chat Room</h2> 
+    </div>
+
     <div id="chat-log"></div>
     <div class="form-group" style="display: flex;">
       <input type="text" id="chat-input" placeholder="Type your message..." style="flex-grow: 1; margin-top: 0;" />
@@ -550,17 +556,56 @@
       document.getElementById('flower-patch').innerHTML = `🌸 x ${currentPoints}`; 
     }
     
-    // (V11 聊天室欢迎语)
+    /* 【【【 蓝图 11.17: 更新聊天室欢迎语 + 精灵图片！ 】】】 */
     async function updateChatGreeting() {
-      const profile = await db.profile.get('userProfile');
-      if (profile) {
-        document.getElementById('chat-title').textContent = `Chat with ${profile.spriteName}`; 
-        const chatLog = document.getElementById('chat-log');
-        if (chatLog.children.length === 0) {
-           addChatMessage('sprite', `Hello, ${profile.userName}! Talk to me.`); 
-        }
-      } else {
-          document.getElementById('chat-title').textContent = `Chat Room`; 
+      let currentSpriteUrl = 'assets/ecosprite-1.png'; // (默认图片)
+      const chatTitleEl = document.getElementById('chat-title'); // (V11.17 提前获取)
+      const chatSpriteIconEl = document.getElementById('chat-sprite-icon'); // (V11.17 提前获取)
+
+      try { // (V11.17 加个 try...catch)
+          const profile = await db.profile.get('userProfile');
+          
+          if (profile) {
+            // (1. 更新标题)
+            chatTitleEl.textContent = `Chat with ${profile.spriteName}`; 
+            
+            // (2. 检查穿了哪件衣服)
+            if (profile.equippedOutfitId) {
+                const equippedOutfit = await db.wardrobe.get(profile.equippedOutfitId);
+                if (equippedOutfit && equippedOutfit.imageUrl) {
+                    currentSpriteUrl = equippedOutfit.imageUrl; // (找到了！)
+                } else {
+                    console.warn(`Chat View: Equipped outfit ID "${profile.equippedOutfitId}" not found. Using default.`);
+                    // (保险) 如果找不到，强制用 'initial' (保险起见，这里不写回数据库)
+                    const initialOutfit = await db.wardrobe.get('initial');
+                    if(initialOutfit && initialOutfit.imageUrl) currentSpriteUrl = initialOutfit.imageUrl;
+                }
+            } else {
+                 // (保险) 如果 profile 里没记录，也用 'initial'
+                 const initialOutfit = await db.wardrobe.get('initial');
+                 if(initialOutfit && initialOutfit.imageUrl) currentSpriteUrl = initialOutfit.imageUrl;
+            }
+
+            // (3. 更新聊天记录里的欢迎语 - 不变)
+            const chatLog = document.getElementById('chat-log');
+            if (chatLog.children.length === 0) {
+               addChatMessage('sprite', `Hello, ${profile.userName}! Talk to me.`); 
+            }
+            
+          } else {
+              // (如果没领养，用默认标题)
+              chatTitleEl.textContent = `Chat Room`; 
+          }
+
+          // (4. 更新“小座位”上的精灵图片！)
+          chatSpriteIconEl.src = currentSpriteUrl;
+
+      } catch (error) {
+          console.error("Failed to update chat greeting or sprite icon:", error);
+          // 出错了也要保证有默认标题和图片
+          chatTitleEl.textContent = `Chat Room`; 
+          chatSpriteIconEl.src = 'assets/ecosprite-1.png';
+          // 也可以在这里加一个错误提示给用户
       }
     }
 
