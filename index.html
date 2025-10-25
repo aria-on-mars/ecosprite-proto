@@ -158,6 +158,12 @@
     <h2>Data Safe Box</h2> 
     <button class="save-button">Export Save</button>
     <button class="save-button" style="background-color: #555;">Import Save</button>
+    <button id="clear-data-btn" class="save-button" style="background-color: #dc2626; margin-top: 30px;">
+      ⚠️ Clear All Data (Reset) 
+    </button>
+    <p style="font-size: 12px; color: #777; width: 80%; text-align: center;">
+        (Warning: This will erase your EcoSprite's name, points, and wardrobe. Use only for testing!)
+    </p>
   </div>
 
   <div id="ar-view" class="view">
@@ -567,6 +573,43 @@
         }
     };
 
+    /* 【【【 蓝图 22: 我们的“遗忘药水” (V11.4 核心魔法) 】】】 */
+    
+    document.getElementById('clear-data-btn').onclick = async function() {
+      // 1. (最重要的！) 必须先问主人！
+      const confirmation = confirm(
+        "Are you absolutely sure you want to clear ALL data?\n\n" +
+        "This will permanently delete your EcoSprite's profile (name), points, and wardrobe.\n\n" +
+        "You will have to go through the adoption ceremony again."
+      ); // (用了 confirm 来弹出一个“是/否”的选择框)
+
+      // 2. 如果主人“犹豫”了，我们就什么都不做
+      if (!confirmation) {
+        alert("Okay, data wipe cancelled. Your EcoSprite is safe! 🥰");
+        return; 
+      }
+
+      // 3. 如果主人“确认”了...
+      try {
+        console.log("开始清除所有 Dexie 数据...");
+        
+        // (核心魔法！) 我们命令“保险箱”(`Dexie.js`)，
+        // 把我们所有的“账本”(`profile`, `stats`, `wardrobe`) 都“清空”！
+        await db.profile.clear();
+        await db.stats.clear();
+        await db.wardrobe.clear(); 
+        
+        console.log("所有数据已清除！");
+        alert("All EcoSprite data has been cleared. Reloading for a fresh start...");
+        
+        // 4. (关键！) “遗忘”之后，我们必须“重启”小小世界！
+        location.reload(); // (这个魔法会让整个网页“刷新”！)
+        
+      } catch (error) {
+        console.error("清除数据失败:", error);
+        alert("Oops... Failed to clear data. Error: " + error.message);
+      }
+    };
 
     /* 【蓝图 15: 我们的“迎宾员” (V5)】 */
     (async function() {
