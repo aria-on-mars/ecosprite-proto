@@ -23,7 +23,14 @@
 
     body {
       font-family: "Segoe UI", sans-serif;
-      background: linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
+      
+      /* 【【【 V11.5 核心魔法：“森林”背景！ 】】】 */
+      background-image: url('assets/forest.png'); /* 1. 把“渐变”换成了“图片地址”！(阿楠！确保你的图片路径是对的哦！) */
+      background-size: cover; /* 2. 这就是“魔法”！它会“覆盖”整个屏幕，自动缩放和“截断”多余部分！*/
+      background-position: center center; /* 3. “截断”的时候，尽量保持“中间”的部分！ */
+      background-repeat: no-repeat; /* 4. (保险) 告诉它不要“平铺”图片 */
+      /* 【【【 V11.5 魔法结束 】】】 */
+      
       height: 100vh;
       margin: 0;
       display: flex;
@@ -31,8 +38,41 @@
       align-items: center;
       justify-content: center;
       color: var(--color-text);
-      transition: background-color 0.5s;
-      overflow: hidden; /* (V10 修复) */
+      /* (V11.5 修改！) 背景图片不能“过渡”，我们把这个删掉或注释掉 */
+      /* transition: background-color 0.5s; */ 
+      overflow: hidden; 
+      
+      /* (V11.5 可选！) 如果森林图片太亮，导致白色泡泡看不清，
+         我们可以加一层“暗色蒙版”：
+         background-blend-mode: multiply; 
+         background-color: rgba(0, 0, 0, 0.1); /* 浅浅的暗色 */
+      /* (如果加了这个，那下面的 view 背景也要调整) */
+    }
+
+    /* (V11.5 可选！) 如果你加了上面的“暗色蒙版”，
+       那么其他房间的白色背景也要改一下，让它“盖住”森林 */
+    .view { 
+      /* ... 其他 .view 样式 ... */
+      background-color: rgba(255, 255, 255, 0); /* 默认透明 */
+      transition: background-color 0.5s; /* 让切换时有淡入效果 */
+    }
+    .view.active { 
+        display: flex; 
+        /* (只有“激活”的房间才显示白色背景，盖住森林) */
+        /* background-color: white;  <--- V11.2 的旧代码 */
+        /* (如果 home-view 不需要白色背景，就这样写) */
+    }
+    #home-view.active {
+        background-color: rgba(255, 255, 255, 0); /* “客厅”保持透明，显示森林 */
+    }
+    #chat-view.active, 
+    #camera-view.active, 
+    #travel-view.active, 
+    #wardrobe-view.active, 
+    #data-view.active, 
+    #ar-view.active, 
+    #setup-view.active {
+        background-color: white; /* 其他“房间”用白色背景盖住森林 */
     }
     /* 【【【 V11.2 修复结束 】】】 */
     
