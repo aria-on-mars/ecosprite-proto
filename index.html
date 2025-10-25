@@ -845,15 +845,45 @@
         }
     }
 
-    /* 【蓝图 15: 我们的“迎宾员” (V5)】 */
+    /* 【【【 蓝图 15: 我们的“迎宾员” (V11.9 - 强制初始化衣柜!) 】】】 */
     (async function() {
-      const profile = await db.profile.get('userProfile');
-      if (!profile) {
-        showView('setup-view');
-      } else {
-        showView('home-view');
+      try { 
+          // 【【【 V11.9 核心修复：强制检查并初始化衣柜！ 】】】
+          const outfitCount = await db.wardrobe.count();
+          if (outfitCount === 0) {
+              console.log("Wardrobe is empty, FORCE initializing outfits...");
+              const initialOutfits = [
+                  // (这里的英文名字是对的！)
+                  { id: 'initial', name: 'Initial Sprite', imageUrl: 'assets/ecosprite-1.png', requiredPoints: 0 },
+                  { id: 'flower', name: 'Flower Wreath Set', imageUrl: 'assets/ecosprite-2.png', requiredPoints: 100 },
+                  { id: 'forest', name: 'Forest Adventure Set', imageUrl: 'assets/ecosprite-3.png', requiredPoints: 200 }
+              ];
+              await db.wardrobe.bulkPut(initialOutfits);
+              console.log("Initial outfits FORCE added to wardrobe.");
+          } else {
+              console.log("Wardrobe already contains outfits."); // (衣柜有东西，就不重复加了)
+          }
+          // 【【【 V11.9 修复结束 】】】
+
+          // (原来的加载 profile 逻辑不变)
+          const profile = await db.profile.get('userProfile');
+          if (!profile) {
+            showView('setup-view');
+          } else {
+            // (原来的检查 equippedOutfitId 逻辑不变)
+            if (!profile.equippedOutfitId) {
+                console.log("Profile missing equippedOutfitId, setting to 'initial'.");
+                await db.profile.update('userProfile', { equippedOutfitId: 'initial' });
+            }
+            showView('home-view'); 
+          }
+      } catch (error) {
+          console.error("Failed during startup:", error); // (V11.9 优化错误信息)
+          // 如果加载失败，尝试显示设置界面或给个错误提示
+          showView('setup-view'); // 退回领养界面可能是最安全的
+          alert("Oops! Something went wrong initializing EcoSprite. You might need to set it up again."); // (V11.9 优化错误信息)
       }
-    })(); 
+    })();
 
   </script>
 </body>
