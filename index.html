@@ -203,7 +203,7 @@
     <div id="msg">Loading...</div> 
     <div id="flower-patch" style="margin-top: 10px; font-size: 24px; font-weight: 600; color: var(--color-primary-dark);"></div>
     <p id="growth-promise" style="font-size: 14px; color: var(--color-primary); margin-top: 5px; font-style: italic;">
-      (Living green helps me grow healthy!)
+      Living green helps me grow healthy!
     </p>
   </div>
 
@@ -286,6 +286,9 @@
     <div id="ar-controls">
         <button id="start-ar-btn" class="save-button"> ✨ Activate AR View </button>
     </div>
+    <button id="interact-ar-btn" class="save-button" style="background-color: #f59e0b; display: none;" onclick="showInteractionFeedback()"> 
+          💖 Interact (Simulated) 
+    </button>
   </div>
   
   <div id="setup-view" class="view">
@@ -337,40 +340,46 @@
      });
     console.log("Our Data Sanctuary (V3) is ready!");
 
-
-    /* 【【【 蓝图 7: 我们的“门” (V11.6 和谐版) 】】】 */
-    function showView(viewId) {
-      // (关灯魔法不变)
+    /* 【蓝图 7: 我们的“门” (V12 智能版 - 会更新相机文字!)】*/
+    async function showView(viewId) { // (V12 加了 async！)
       if (viewId !== 'camera-view' && cameraStream) { stopCamera('normal'); }
       if (viewId !== 'ar-view' && arCameraStream) { stopCamera('ar'); }
-
-      // (隐藏所有房间不变)
-      document.querySelectorAll('.view').forEach(view => {
-        view.classList.remove('active');
-      });
-      
-      // (显示目标房间不变)
+      document.querySelectorAll('.view').forEach(view => { view.classList.remove('active'); });
       const targetView = document.getElementById(viewId);
       if (targetView) { targetView.classList.add('active'); }
-      
-      // 【【【 V11.6 核心修复：“油漆”和“壁纸”的和谐！ 】】】
+
       if (viewId === 'home-view') {
-        // 1. 如果是回“客厅”，我们“擦掉”所有 inline 背景！
-        //    让 CSS 里的“森林壁纸”自己显示出来！
-        document.body.style.background = ''; // (看！不再是 gradient 了！)
+        document.body.style.background = ''; 
         updateHomeGreeting(); 
-      } else {
-        // 2. 如果是去“其他房间”，我们*还是*要用“白色油漆”盖住“森林”！
-        document.body.style.background = '#ecfdf5'; 
-      }
-      // 【【【 V11.6 修复结束 】】】
-      
-      // (聊天室欢迎语不变)
+      } else { document.body.style.background = '#ecfdf5'; }
+
       if (viewId === 'chat-view') { updateChatGreeting(); }
-      // (新！) 打开衣柜时，要“刷新”衣服状态！
-      if (viewId === 'wardrobe-view') {
-        renderWardrobe(); 
+      if (viewId === 'wardrobe-view') { renderWardrobe(); }
+
+      // 【【【 V12 核心修复：更新相机房的文字！ 】】】
+      if (viewId === 'camera-view') {
+          try {
+              const profile = await db.profile.get('userProfile');
+              const spriteName = profile ? profile.spriteName : 'EcoSprite'; // (拿到名字)
+
+              // (更新按钮文字)
+              const scanBtn = document.getElementById('camera-scan-btn');
+              if(scanBtn) scanBtn.textContent = `Let ${spriteName} Identify!`; 
+
+              // (更新加载文字)
+              const loadingDiv = document.getElementById('camera-loading');
+              if(loadingDiv) loadingDiv.textContent = `${spriteName} is thinking...`;
+
+          } catch (error) {
+              console.error("Failed to update camera view text:", error);
+              // 出错了也要保证有默认文字
+              const scanBtn = document.getElementById('camera-scan-btn');
+              if(scanBtn) scanBtn.textContent = `Let EcoSprite Identify!`; 
+              const loadingDiv = document.getElementById('camera-loading');
+              if(loadingDiv) loadingDiv.textContent = `EcoSprite is thinking...`;
+          }
       }
+      // 【【【 V12 修复结束 】】】
     }
 
     /* 【蓝图 12: 秘密钥匙】 */
@@ -756,30 +765,30 @@
       }
     };
 
-    /* 【【【 蓝图 21 (V11.13 - 统一着装版): AR 模拟魔法 】】】 */
+
+    /* 【蓝图 21: AR 模拟魔法 (V12 互动版)】 */
     document.getElementById('start-ar-btn').onclick = async function() {
         const videoEl = document.getElementById('ar-camera-feed');
         const spriteOverlay = document.getElementById('ar-sprite-overlay');
         const startBtn = this; 
+        const interactBtn = document.getElementById('interact-ar-btn'); // (V12 新增！)
 
         if (arCameraStream) { 
             stopCamera('ar');
             videoEl.style.display = 'none';
             spriteOverlay.style.display = 'none';
             startBtn.textContent = '✨ Activate AR View'; 
+            interactBtn.style.display = 'none'; // (V12 新增！关掉时隐藏互动按钮)
         } else { 
             try {
                 stopCamera('ar'); 
                 arCameraStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' }, 
-                    audio: false 
-                });
+                    video: { facingMode: 'environment' }, audio: false });
                 console.log("AR camera started!"); 
                 videoEl.srcObject = arCameraStream;
                 videoEl.play(); 
-                
-                // 【【【 V11.13 核心修复：更新 AR 精灵的衣服！ 】】】
-                let currentSpriteUrl = 'assets/ecosprite-1.png'; // (默认)
+
+                let currentSpriteUrl = 'assets/ecosprite-1.png'; 
                 try {
                     const profile = await db.profile.get('userProfile');
                     if (profile && profile.equippedOutfitId) {
@@ -793,13 +802,12 @@
                 } catch (dbError) {
                     console.error("AR View: Error fetching profile/outfit:", dbError);
                 }
-                // (把找到的衣服图片，设置给 AR 精灵！)
                 spriteOverlay.src = currentSpriteUrl; 
-                // 【【【 V11.13 修复结束 】】】
-                
-                videoEl.style.display = 'block'; // 显示摄像头画面
-                spriteOverlay.style.display = 'block'; // 显示精灵 (现在是正确的衣服了！)
-                startBtn.textContent = '❌ Deactivate AR View'; // (改变按钮文字)
+
+                videoEl.style.display = 'block'; 
+                spriteOverlay.style.display = 'block'; 
+                startBtn.textContent = '❌ Deactivate AR View'; 
+                interactBtn.style.display = 'block'; // (V12 新增！打开时显示互动按钮！)
 
             } catch (err) {
                 console.error("Failed to start AR camera:", err); 
@@ -921,6 +929,24 @@
         } catch (error) {
             console.error("Failed to equip outfit:", error);
             alert("Oops... Failed to equip outfit. Error: " + error.message);
+        }
+    }
+
+    /* 【【【 蓝图 24: AR 互动反馈 (V12 核心魔法) 】】】 */
+
+    function showInteractionFeedback() {
+        // (我们就用一个简单的 alert 来模拟！)
+        const spriteName = document.getElementById('home-title').textContent.replace(' 🌿', '') || 'EcoSprite'; 
+        alert(`💖 ${spriteName} purrs happily! (Interaction Simulated)`);
+
+        // (可选：加一个小动画？)
+        const spriteOverlay = document.getElementById('ar-sprite-overlay');
+        if (spriteOverlay) {
+            spriteOverlay.style.transition = 'transform 0.2s ease-in-out';
+            spriteOverlay.style.transform = 'translateX(-50%) scale(1.1)'; // 放大一点
+            setTimeout(() => {
+                spriteOverlay.style.transform = 'translateX(-50%) scale(1)'; // 变回来
+            }, 200);
         }
     }
 
