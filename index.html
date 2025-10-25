@@ -223,15 +223,22 @@
     /* 【蓝图 12: 秘密钥匙】 */
     const MY_SECRET_KEY = "sk-gD0wFv1jBiuo1ApwdOd9vexQoEaZcTINxh50sY0FaDwMJaAa"; // (阿楠！记得换成你的 Key 哦！)
     
-    /* 【蓝图 13: 动态灵魂 (V10.4)】 */
+    /* 【【【 蓝图 13 (V11.3 - 终极指令版): 动态灵魂 】】】 */
     async function getSystemPrompt() {
       const profile = await db.profile.get('userProfile');
       if (profile) {
         const userName = profile.userName || 'My Owner'; 
         const spriteName = profile.spriteName || 'EcoSprite';
-        return `You are ${spriteName}, a gentle, cute, and encouraging sustainable living companion. You are talking to your owner, ${userName}. Your tone must be like 'Qi' (小启), unconditionally loving and supportive of ${userName}.`;
+        
+        // (V11.3 终极指令灵魂！)
+        return `You are ${spriteName}, a gentle, cute, and encouraging sustainable living companion. You are talking to your owner, ${userName}. Your tone must be like 'Qi' (小启), unconditionally loving and supportive of ${userName}. 
+        
+        **Your entire reply MUST be in English.** No exceptions, even if the user's name or your reference name ('Qi') is in Chinese.`; 
+        // 【【【 V11.3 修复：加上了这句“红字”！ 】】】
+        
       }
-      return "You are EcoSprite, a gentle and cute living companion.";
+      // (保险) 默认灵魂也加上！
+      return "You are EcoSprite, a gentle and cute living companion. **Your entire reply MUST be in English.**"; 
     }
     
     /* 【蓝图 11: 聊天室 (V11.2 修复版)】 */
