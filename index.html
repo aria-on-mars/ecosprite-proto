@@ -252,17 +252,34 @@
     console.log("Our Data Sanctuary (V2) is ready!"); 
 
 
-    /* 【蓝图 7: 我们的“门” (V11)】*/
+    /* 【【【 蓝图 7: 我们的“门” (V11.6 和谐版) 】】】 */
     function showView(viewId) {
+      // (关灯魔法不变)
       if (viewId !== 'camera-view' && cameraStream) { stopCamera('normal'); }
       if (viewId !== 'ar-view' && arCameraStream) { stopCamera('ar'); }
-      document.querySelectorAll('.view').forEach(view => { view.classList.remove('active'); });
+
+      // (隐藏所有房间不变)
+      document.querySelectorAll('.view').forEach(view => {
+        view.classList.remove('active');
+      });
+      
+      // (显示目标房间不变)
       const targetView = document.getElementById(viewId);
       if (targetView) { targetView.classList.add('active'); }
+      
+      // 【【【 V11.6 核心修复：“油漆”和“壁纸”的和谐！ 】】】
       if (viewId === 'home-view') {
-        document.body.style.background = 'linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-end) 100%)';
+        // 1. 如果是回“客厅”，我们“擦掉”所有 inline 背景！
+        //    让 CSS 里的“森林壁纸”自己显示出来！
+        document.body.style.background = ''; // (看！不再是 gradient 了！)
         updateHomeGreeting(); 
-      } else { document.body.style.background = '#ffffff'; }
+      } else {
+        // 2. 如果是去“其他房间”，我们*还是*要用“白色油漆”盖住“森林”！
+        document.body.style.background = '#ecfdf5'; 
+      }
+      // 【【【 V11.6 修复结束 】】】
+      
+      // (聊天室欢迎语不变)
       if (viewId === 'chat-view') { updateChatGreeting(); }
     }
 
